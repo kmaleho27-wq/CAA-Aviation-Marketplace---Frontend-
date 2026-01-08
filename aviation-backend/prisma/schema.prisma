@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  AMO
+  AME
+  ADMIN
+}
+
+enum LicenseCategory {
+  A
+  B
+  C
+  D
+  W
+  X
+}
+
+model User {
+  id            Int       @id @default(autoincrement())
+  email         String    @unique
+  password      String
+  role          UserRole
+  isVerified    Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  amoProfile    AMOProfile?
+  ameProfile    AMEProfile?
+}
+
+model AMOProfile {
+  id                Int      @id @default(autoincrement())
+  userId            Int      @unique
+  companyName       String
+  sacaaApprovalNo   String   @unique
+  approvalDocPath   String?
+  scope             String
+  location          String
+
+  user              User     @relation(fields: [userId], references: [id])
+  jobs              Job[]
+}
+
+model AMEProfile {
+  id                Int               @id @default(autoincrement())
+  userId            Int               @unique
+  fullName          String
+  licenseNumber     String            @unique
+  licenseDocPath    String?
+  categories        LicenseCategory[]
+  typeRatings       String[]
+  experienceYears   Int
+  licenseExpiry     DateTime
+  humanFactorsCert  Boolean           @default(false)
+
+  user              User              @relation(fields: [userId], references: [id])
+  applications      JobApplication[]
+}
+
+model Job {
+  id                Int               @id @default(autoincrement())
+  amoId             Int
+  title             String
+  description       String
+  requiredCategories LicenseCategory[]
+  requiredTypes     String[]
+  location          String
+  contractType      String
+  postedAt          DateTime          @default(now())
+
+  amo               AMOProfile        @relation(fields: [amoId], references: [id])
+  applications      JobApplication[]
+}
+
+model JobApplication {
+  id        Int @id @default(autoincrement())
+  jobId     Int
+  ameId     Int
+  status    String @default("pending")
+  appliedAt DateTime @default(now())
+
+  job       Job @relation(fields: [jobId], references: [id])
+  ame       AMEProfile @relation(fields: [ameId], references: [id])
+
+  @@unique([jobId, ameId])
+}
