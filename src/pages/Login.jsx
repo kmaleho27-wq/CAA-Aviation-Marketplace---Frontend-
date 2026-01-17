@@ -22,7 +22,7 @@ export default function Login() {
 
   return (
     <div className="login-container">
-      <h1>SACAA Aviation Marketplace ✈️</h1>
+      <h1>Aeromarket ✈️</h1>
       <form onSubmit={handleLogin}>
         <input
           type="email"

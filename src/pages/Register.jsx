@@ -22,7 +22,7 @@ export default function Register() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-50 to-pink-100">
       <form onSubmit={handleRegister} className="bg-white p-10 rounded-2xl shadow-2xl w-96">
-        <h1 className="text-4xl font-bold mb-8 text-center text-purple-900">Register for SACAA Marketplace ✈️</h1>
+        <h1 className="text-4xl font-bold mb-8 text-center text-purple-900">Register for Aeromarket ✈️</h1>
         <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full p-4 mb-4 border-2 rounded-lg" required />
         <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full p-4 mb-4 border-2 rounded-lg" required />
         <select value={role} onChange={(e) => setRole(e.target.value)} className="w-full p-4 mb-8 border-2 rounded-lg">

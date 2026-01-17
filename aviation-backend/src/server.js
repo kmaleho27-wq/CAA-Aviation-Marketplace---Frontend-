@@ -23,7 +23,7 @@ app.use('/api/', limiter);
 app.use('/api/auth', authRoutes);
 
 app.get('/', (req, res) => {
-  res.json({ message: 'SACAA Aviation Backend - Connected and Ready ✈️' });
+  res.json({ message: 'Aeromarket Aviation Backend - Connected and Ready ✈️' });
 });
 
 const PORT = process.env.PORT || 5000;
