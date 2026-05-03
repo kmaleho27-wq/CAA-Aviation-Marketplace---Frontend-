@@ -1,40 +1,68 @@
 import { supabase, snakeToCamel } from '../lib/supabase';
 
 /**
- * Contractor wallet. Aggregates earnings + recent payouts for the mobile
- * app screen. Computed from completed Personnel-type transactions where
- * the seller_id matches the current user (RLS already gates this).
+ * Contractor wallet (mobile screen). Returns the shape src/pages/mobile/
+ * Wallet.jsx consumes:
+ *   user:     { name, role, rating, license }
+ *   docs:     [{ ref, name, status, expires }]
+ *   earnings: [{ label, value, tone }]
  */
 export async function getWallet() {
-  const { data: user } = await supabase.auth.getUser();
-  if (!user?.user) throw new Error('Not signed in.');
+  const { data: u } = await supabase.auth.getUser();
+  if (!u?.user) throw new Error('Not signed in.');
 
-  // Find the personnel row (if any) linked to this user — earnings sum
-  // works either via transaction.seller_id or transaction.personnel_id.
+  // Personnel row linked to this auth user (full row, RLS allows self).
   const { data: personnel } = await supabase
     .from('personnel')
-    .select('id, name, license, rate, available')
-    .eq('user_id', user.user.id)
+    .select('id, name, role, rating, license, location')
+    .eq('user_id', u.user.id)
     .maybeSingle();
 
-  const { data: txns, error } = await supabase
-    .from('transaction')
-    .select('id, type, item, party, amount, status, created_at')
-    .eq('type', 'Personnel')
-    .order('created_at', { ascending: false })
-    .limit(20);
-  if (error) throw error;
+  // Linked compliance docs (licence, medical, etc.) for this contractor.
+  const { data: docs } = personnel
+    ? await supabase
+        .from('document')
+        .select('ref_number, name, status, expires')
+        .eq('personnel_id', personnel.id)
+        .order('expires', { ascending: true })
+    : { data: [] };
 
-  const completed = (txns ?? []).filter((t) => t.status === 'completed');
-  const totalEarned = completed.reduce((s, t) => s + parseAmount(t.amount), 0);
+  // Earnings: completed Personnel transactions where the contractor was
+  // the seller. RLS lets sellers see their own.
+  const { data: completedTxns } = await supabase
+    .from('transaction')
+    .select('amount, created_at')
+    .eq('type', 'Personnel')
+    .eq('status', 'completed')
+    .eq('seller_id', u.user.id);
+
+  const txns = completedTxns ?? [];
+  const totalCents = txns.reduce((s, t) => s + parseAmount(t.amount), 0);
+  const now = new Date();
+  const thisMonthCents = txns
+    .filter((t) => {
+      const d = new Date(t.created_at);
+      return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+    })
+    .reduce((s, t) => s + parseAmount(t.amount), 0);
 
   return {
-    contractor: snakeToCamel(personnel ?? {}),
-    earnings: {
-      total:    formatZar(totalEarned),
-      completed: completed.length,
+    user: {
+      name:    personnel?.name    ?? u.user.email,
+      role:    personnel?.role    ?? 'AME',
+      rating:  personnel?.rating  ?? '—',
+      license: personnel?.license ?? '—',
     },
-    recent: snakeToCamel(txns ?? []),
+    docs: (docs ?? []).map((d) => ({
+      ref:     d.ref_number,
+      name:    d.name,
+      status:  d.status,
+      expires: d.expires ? new Date(d.expires).toISOString().slice(0, 10) : '—',
+    })),
+    earnings: [
+      { label: 'This Month',   value: formatZar(thisMonthCents), tone: 'success' },
+      { label: 'Year-to-date', value: formatZar(totalCents),     tone: 'primary' },
+    ],
   };
 }
 
@@ -54,7 +82,9 @@ export async function listJobs() {
     return a.urgency === 'aog' ? -1 : 1;
   });
 
-  return snakeToCamel(sorted);
+  // JobDetail.jsx reads `job.rating` (the required licence rating) — alias
+  // ratingReq → rating so the UI doesn't have to learn the schema name.
+  return snakeToCamel(sorted).map((j) => ({ ...j, rating: j.ratingReq ?? j.rating }));
 }
 
 export async function acceptJob(id) {

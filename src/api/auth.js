@@ -24,7 +24,12 @@ export async function login(email, password) {
 
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) throw normalizeAuthError(error);
-  return userFromSession(data.session);
+  const user = userFromSession(data.session);
+  // Populate localStorage synchronously so the next render of TopBar / RequireAuth
+  // sees the user immediately. Without this, the onAuthStateChange listener races
+  // with the navigate() call and TopBar reads stale/empty user → wrong "Mode" chip.
+  setSession({ token: data.session.access_token, user });
+  return user;
 }
 
 export async function register({ name, email, password, role }) {

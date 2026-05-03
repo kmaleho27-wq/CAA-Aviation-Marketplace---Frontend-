@@ -18,8 +18,8 @@ export async function getKpis() {
   const escrowZar = (escrowSum.data ?? []).reduce((sum, t) => sum + parseAmount(t.amount), 0);
 
   return [
-    { label: 'Active AOG Events', value: String(aogCount.count ?? 0), delta: '', tone: 'warning' },
-    { label: 'Escrow Balance',    value: formatZar(escrowZar),         delta: '', tone: 'neutral' },
+    { label: 'Active AOG Events', value: String(aogCount.count ?? 0), sub: 'live across the fleet',    tone: 'aog'     },
+    { label: 'Escrow Balance',    value: formatZar(escrowZar),         sub: 'in-flight transactions',  tone: 'mustard' },
   ];
 }
 

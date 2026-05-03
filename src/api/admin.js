@@ -7,33 +7,55 @@ import { supabase, snakeToCamel } from '../lib/supabase';
 // ─────────────────────────────────────────────────────────────────────
 
 /**
- * Top-of-page KPIs for the admin overview screen. Computed client-side
- * from a small handful of cheap counts.
+ * Top-of-page KPIs + recent KYC + open dispute count for the admin
+ * overview screen. Shape matches what src/pages/admin/Overview.jsx expects.
  *
  * Returns:
- *   { kpis: [{ label, value, tone }], expiryWatch: [...] }
+ *   {
+ *     kpis: [{ label, value, sub, tone }],
+ *     recentKyc: [{ id, name, type, license, risk, submitted, ... }],
+ *     openDisputes: number,
+ *     expiryWatch: [...],
+ *   }
  */
 export async function getAdminOverview() {
-  const [pendingKyc, openDisputes, expiringDocs, activeAog] = await Promise.all([
+  const [pendingKyc, openDisputes, expiringDocs, activeAog, recentKycRows] = await Promise.all([
     supabase.from('kyc_application').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
     supabase.from('dispute').select('*', { count: 'exact', head: true }).eq('status', 'open'),
     supabase.from('document').select('id, name, expires, status').eq('status', 'expiring').order('expires', { ascending: true }).limit(5),
     supabase.from('aog_event').select('*', { count: 'exact', head: true }).eq('active', true),
+    supabase.from('kyc_application').select('*').eq('status', 'pending').order('submitted_at', { ascending: false }).limit(5),
   ]);
 
-  for (const r of [pendingKyc, openDisputes, expiringDocs, activeAog]) {
+  for (const r of [pendingKyc, openDisputes, expiringDocs, activeAog, recentKycRows]) {
     if (r.error) throw r.error;
   }
 
   return {
     kpis: [
-      { label: 'KYC pending',     value: String(pendingKyc.count ?? 0),    tone: 'neutral' },
-      { label: 'Open disputes',   value: String(openDisputes.count ?? 0),  tone: 'warning' },
-      { label: 'Active AOG',      value: String(activeAog.count ?? 0),     tone: 'warning' },
-      { label: 'Expiring docs',   value: String(expiringDocs.data?.length ?? 0), tone: 'caution' },
+      { label: 'KYC pending',   value: String(pendingKyc.count ?? 0),           sub: 'awaiting review', tone: 'primary' },
+      { label: 'Open disputes', value: String(openDisputes.count ?? 0),         sub: 'funds locked',    tone: 'warning' },
+      { label: 'Active AOG',    value: String(activeAog.count ?? 0),            sub: 'live events',     tone: 'aog'     },
+      { label: 'Expiring docs', value: String(expiringDocs.data?.length ?? 0), sub: 'next 30 days',    tone: 'warning' },
     ],
+    openDisputes: openDisputes.count ?? 0,
+    recentKyc: snakeToCamel(recentKycRows.data ?? []).map((k) => ({
+      ...k,
+      submitted: timeAgo(k.submittedAt),
+    })),
     expiryWatch: snakeToCamel(expiringDocs.data ?? []),
   };
+}
+
+function timeAgo(iso) {
+  if (!iso) return '';
+  const ms = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(ms / 60_000);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  return `${d}d ago`;
 }
 
 // ── KYC ──────────────────────────────────────────────────────────────
