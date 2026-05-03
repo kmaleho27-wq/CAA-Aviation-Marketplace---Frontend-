@@ -44,7 +44,25 @@ export default function Signoff() {
   };
 
   if (query.loading && !query.data) return <div style={styles.scroll}><LoadingBlock label="Loading work order…" minHeight={140} /></div>;
-  if (query.error || !wo) return <div style={styles.scroll}><ErrorBlock error={query.error} onRetry={query.refetch} /></div>;
+  if (query.error) return <div style={styles.scroll}><ErrorBlock error={query.error} onRetry={query.refetch} /></div>;
+  if (!wo) {
+    return (
+      <div style={styles.scroll}>
+        <div style={styles.overline}>Active Contract</div>
+        <div style={styles.title}>Digital Release to Service</div>
+        <div style={{ ...styles.workCard, textAlign: 'center', padding: '32px 20px' }}>
+          <div style={{ fontSize: 32, marginBottom: 12, opacity: 0.4 }}>📋</div>
+          <div style={{ fontSize: 14, color: 'var(--text-primary)', marginBottom: 6, fontWeight: 500 }}>
+            No active work order
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-tertiary)', lineHeight: 1.5 }}>
+            When an operator assigns you to a job and the part arrives,
+            the work order shows up here for digital sign-off.
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const primaryLabel = step === 0
     ? 'Review Complete →'
