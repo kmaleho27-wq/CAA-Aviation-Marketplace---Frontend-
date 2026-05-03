@@ -1,7 +1,10 @@
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApi } from '../lib/useApi';
 import { getKpis, getAogEvents } from '../api/dashboard';
 import { listPersonnel } from '../api/personnel';
+import { listTransactions } from '../api/transactions';
+import { supabase } from '../lib/supabase';
 import { LoadingBlock, ErrorBlock } from '../components/ApiState';
 
 const STAT_TONES = {
@@ -84,6 +87,31 @@ export default function Dashboard() {
   const kpis = useApi(getKpis, []);
   const aog = useApi(getAogEvents, []);
   const personnel = useApi(() => listPersonnel({ filter: 'All' }), []);
+  const txns = useApi(listTransactions, []);
+
+  const pendingActions = (txns.data ?? []).filter((t) =>
+    t.status === 'rts-pending' || t.status === 'in-escrow',
+  );
+
+  // Realtime: refresh AOG events + KPIs whenever a row in aog_event changes.
+  // Requires the table to be in the supabase_realtime publication
+  // (supabase/migrations/0005_realtime_publication.sql). Without that the
+  // subscription resolves but no events fire — graceful degradation.
+  useEffect(() => {
+    const channel = supabase
+      .channel('aog_event_dashboard')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'aog_event' },
+        () => {
+          aog.refetch();
+          kpis.refetch();
+        },
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div style={styles.page}>
@@ -105,6 +133,21 @@ export default function Dashboard() {
       ) : (
         <div style={styles.statsRow}>
           {kpis.data.map((k) => <StatCard key={k.label} {...k} />)}
+        </div>
+      )}
+
+      {pendingActions.length > 0 && (
+        <div style={styles.actionBanner} onClick={() => navigate('/app/transactions')}>
+          <span style={styles.actionDot} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={styles.actionTitle}>
+              {pendingActions.length} transaction{pendingActions.length === 1 ? '' : 's'} awaiting your sign-off
+            </div>
+            <div style={styles.actionSub}>
+              Funds are in escrow until you sign Release-to-Service. Click to review.
+            </div>
+          </div>
+          <span style={styles.actionArrow}>→</span>
         </div>
       )}
 
@@ -336,5 +379,42 @@ const styles = {
     color: 'var(--text-secondary)',
     padding: '11px 14px',
     borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+  },
+  actionBanner: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    background: 'rgba(212, 169, 52, 0.08)',
+    border: '1px solid rgba(212, 169, 52, 0.25)',
+    borderLeft: '3px solid var(--color-mustard-500)',
+    borderRadius: 'var(--radius-lg)',
+    padding: '12px 16px',
+    marginBottom: 24,
+    cursor: 'pointer',
+    transition: 'background var(--transition-fast)',
+  },
+  actionDot: {
+    width: 8,
+    height: 8,
+    borderRadius: '50%',
+    background: 'var(--color-mustard-500)',
+    boxShadow: 'var(--glow-mustard)',
+    flexShrink: 0,
+  },
+  actionTitle: {
+    fontSize: 13,
+    fontWeight: 600,
+    color: 'var(--text-primary)',
+    marginBottom: 2,
+  },
+  actionSub: {
+    fontSize: 11,
+    color: 'var(--text-tertiary)',
+  },
+  actionArrow: {
+    color: 'var(--color-mustard-500)',
+    fontSize: 14,
+    fontWeight: 700,
+    flexShrink: 0,
   },
 };
