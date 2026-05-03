@@ -1,32 +1,51 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { RequireAuth, RoleGate } from './lib/auth';
-import AppShell from './layouts/AppShell';
-import MobileShell from './layouts/MobileShell';
-import AdminShell from './layouts/AdminShell';
+
+// Critical-path: marketing layout, login, register stay eager so the
+// landing page paints fast on a cold visit.
 import MarketingShell from './layouts/MarketingShell';
 import Landing from './pages/marketing/Landing';
 import Pricing from './pages/marketing/Pricing';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
-import Marketplace from './pages/Marketplace';
-import Personnel from './pages/Personnel';
-import Vault from './pages/Vault';
-import Transactions from './pages/Transactions';
-import Settings from './pages/Settings';
-import Wallet from './pages/mobile/Wallet';
-import Jobs from './pages/mobile/Jobs';
-import Signoff from './pages/mobile/Signoff';
-import Profile from './pages/mobile/Profile';
-import AdminOverview from './pages/admin/Overview';
-import AdminKYC from './pages/admin/KYC';
-import AdminDisputes from './pages/admin/Disputes';
-import AdminAnalytics from './pages/admin/Analytics';
-import AdminTransactions from './pages/admin/AdminTransactions';
+import AuthCallback from './pages/AuthCallback';
+
+// Authenticated surfaces: lazy-loaded so unauthenticated visitors don't
+// download admin / mobile / operator JS just to view the landing page.
+const AppShell        = lazy(() => import('./layouts/AppShell'));
+const MobileShell     = lazy(() => import('./layouts/MobileShell'));
+const AdminShell      = lazy(() => import('./layouts/AdminShell'));
+const Dashboard       = lazy(() => import('./pages/Dashboard'));
+const Marketplace     = lazy(() => import('./pages/Marketplace'));
+const Personnel       = lazy(() => import('./pages/Personnel'));
+const Vault           = lazy(() => import('./pages/Vault'));
+const Transactions    = lazy(() => import('./pages/Transactions'));
+const Settings        = lazy(() => import('./pages/Settings'));
+const Wallet          = lazy(() => import('./pages/mobile/Wallet'));
+const Jobs            = lazy(() => import('./pages/mobile/Jobs'));
+const Signoff         = lazy(() => import('./pages/mobile/Signoff'));
+const Profile         = lazy(() => import('./pages/mobile/Profile'));
+const AdminOverview   = lazy(() => import('./pages/admin/Overview'));
+const AdminKYC        = lazy(() => import('./pages/admin/KYC'));
+const AdminDisputes   = lazy(() => import('./pages/admin/Disputes'));
+const AdminAnalytics  = lazy(() => import('./pages/admin/Analytics'));
+const AdminTransactions = lazy(() => import('./pages/admin/AdminTransactions'));
+
+const ChunkFallback = () => (
+  <div style={{
+    flex: 1, minHeight: '60vh',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontSize: 13, color: 'var(--text-tertiary)',
+  }}>
+    Loading…
+  </div>
+);
 
 export default function App() {
   return (
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <Suspense fallback={<ChunkFallback />}>
       <Routes>
         <Route element={<MarketingShell />}>
           <Route path="/" element={<Landing />} />
@@ -35,6 +54,7 @@ export default function App() {
 
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
 
         <Route
           path="/app"
@@ -92,6 +112,7 @@ export default function App() {
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </Suspense>
     </Router>
   );
 }

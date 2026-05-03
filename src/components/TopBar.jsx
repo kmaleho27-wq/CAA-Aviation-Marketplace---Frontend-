@@ -1,6 +1,6 @@
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { NAV_ITEMS } from '../data/mock';
-import { getUser, roleLabel } from '../lib/auth';
+import { getUser, roleLabel, logout } from '../lib/auth';
 
 const SearchIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -24,9 +24,15 @@ function pageTitle(pathname) {
 
 export default function TopBar({ unread = 0, onNotifClick }) {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const title = pageTitle(pathname);
   const user = getUser();
   const modeLabel = `${roleLabel(user?.role)} Mode`;
+
+  const handleSignOut = () => {
+    logout();
+    navigate('/login', { replace: true });
+  };
 
   return (
     <header style={styles.bar}>
@@ -61,6 +67,15 @@ export default function TopBar({ unread = 0, onNotifClick }) {
           <span style={styles.roleDot} />
           {modeLabel}
         </div>
+
+        <button
+          type="button"
+          onClick={handleSignOut}
+          style={styles.signOutBtn}
+          title="Sign out"
+        >
+          Sign out
+        </button>
       </div>
     </header>
   );
@@ -151,5 +166,16 @@ const styles = {
     borderRadius: '50%',
     background: 'var(--color-mustard-500)',
     boxShadow: 'var(--glow-mustard)',
+  },
+  signOutBtn: {
+    background: 'transparent',
+    border: '1px solid var(--border-default)',
+    color: 'var(--text-tertiary)',
+    borderRadius: 'var(--radius-md)',
+    padding: '5px 12px',
+    fontSize: 11,
+    fontWeight: 600,
+    cursor: 'pointer',
+    transition: 'color var(--transition-fast), border-color var(--transition-fast)',
   },
 };
