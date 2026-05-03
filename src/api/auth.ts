@@ -74,7 +74,7 @@ export async function me() {
   return {
     id: data.user.id,
     email: data.user.email,
-    name: profile?.name || data.user.user_metadata?.name || data.user.email.split('@')[0],
+    name: profile?.name || data.user.user_metadata?.name || (data.user.email ?? '').split('@')[0],
     role: profile?.role || data.user.user_metadata?.role || 'AME',
     avatarUrl: profile?.avatar_url ?? null,
   };
@@ -82,8 +82,12 @@ export async function me() {
 
 /** Normalize Supabase AuthError → axios-style err.response.data.message
  * so existing catch blocks keep working unchanged. */
-function normalizeAuthError(err) {
-  const wrapped = new Error(err.message || 'Authentication failed.');
+function normalizeAuthError(err: { message?: string }): Error & {
+  response?: { data: { message?: string } };
+} {
+  const wrapped = new Error(err.message || 'Authentication failed.') as Error & {
+    response?: { data: { message?: string } };
+  };
   wrapped.response = { data: { message: err.message } };
   wrapped.cause = err;
   return wrapped;

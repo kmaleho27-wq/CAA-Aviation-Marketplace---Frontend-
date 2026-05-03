@@ -78,16 +78,19 @@ export async function listJobs() {
   // The enum sorts alphabetically (aog < normal — happens to be the order
   // we want), but be explicit: AOG always first.
   const sorted = [...(data ?? [])].sort((a, b) => {
-    if (a.urgency === b.urgency) return new Date(b.created_at) - new Date(a.created_at);
+    if (a.urgency === b.urgency) {
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    }
     return a.urgency === 'aog' ? -1 : 1;
   });
 
   // JobDetail.jsx reads `job.rating` (the required licence rating) — alias
   // ratingReq → rating so the UI doesn't have to learn the schema name.
-  return snakeToCamel(sorted).map((j) => ({ ...j, rating: j.ratingReq ?? j.rating }));
+  const camel = snakeToCamel<Array<Record<string, unknown>>>(sorted);
+  return camel.map((j) => ({ ...j, rating: j.ratingReq ?? j.rating }));
 }
 
-export async function acceptJob(id) {
+export async function acceptJob(id: string) {
   const { data, error } = await supabase.rpc('accept_job', { p_id: id });
   if (error) throw error;
   return snakeToCamel(data);
@@ -115,10 +118,10 @@ export async function getWorkOrder() {
     .limit(1)
     .maybeSingle();
   if (error) throw error;
-  return data ? snakeToCamel(data) : null;
+  return data ? snakeToCamel<{ reference: string; aircraft: string; task: string; airline: string; partUsed: string; payout: string; signed: boolean; [k: string]: unknown }>(data) : null;
 }
 
-export async function signWorkOrder(reference) {
+export async function signWorkOrder(reference?: string) {
   // Caller may not pass a reference — fall back to the contractor's active WO.
   let ref = reference;
   if (!ref) {

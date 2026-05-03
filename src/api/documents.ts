@@ -1,4 +1,8 @@
 import { supabase, snakeToCamel } from '../lib/supabase';
+import type { Database } from '../types/database';
+
+type DocType = Database['public']['Enums']['document_type'];
+type DocStatus = Database['public']['Enums']['document_status'];
 
 /**
  * Compliance Vault listing. RLS gates per-user — see document_select policy
@@ -6,7 +10,8 @@ import { supabase, snakeToCamel } from '../lib/supabase';
  * Cert, Release to Service, Import Clearance) are visible to all
  * authenticated users; personnel-linked docs only to the owner / admin.
  */
-export async function listDocuments({ type, status } = {}) {
+export async function listDocuments(opts: { type?: DocType; status?: DocStatus } = {}) {
+  const { type, status } = opts;
   let q = supabase
     .from('document')
     .select('*')
@@ -27,7 +32,8 @@ export async function listDocuments({ type, status } = {}) {
  * Returns { url, expiresIn } or null if the doc has no storage_path
  * (legacy seed rows have metadata but no actual file).
  */
-export async function getDocumentDownloadUrl(documentId, { expiresIn = 60 } = {}) {
+export async function getDocumentDownloadUrl(documentId: string, opts: { expiresIn?: number } = {}) {
+  const { expiresIn = 60 } = opts;
   const { data: doc, error: docErr } = await supabase
     .from('document')
     .select('storage_path, name')

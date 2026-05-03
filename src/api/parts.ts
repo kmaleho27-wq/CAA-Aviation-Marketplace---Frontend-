@@ -9,7 +9,8 @@ import { supabase, snakeToCamel } from '../lib/supabase';
  *     the legacy Express handler for hardcoded categories). When the schema
  *     adds a `category` column, plug it in.
  */
-export async function listParts({ search, category } = {}) {
+export async function listParts(opts: { search?: string; category?: string } = {}) {
+  const { search, category } = opts;
   let q = supabase.from('part').select('*').order('created_at', { ascending: false });
 
   if (search) {
@@ -30,7 +31,7 @@ export async function listParts({ search, category } = {}) {
  * Phase 4. Until then this throws explicitly so the UI shows a proper error
  * instead of a half-finished transaction.
  */
-export async function procurePart(id) {
+export async function procurePart(id: string) {
   const { data, error } = await supabase.functions.invoke('payments-create-intent', {
     body: { kind: 'parts', partId: id },
   });

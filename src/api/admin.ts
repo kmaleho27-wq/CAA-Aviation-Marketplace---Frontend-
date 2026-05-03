@@ -39,7 +39,7 @@ export async function getAdminOverview() {
       { label: 'Expiring docs', value: String(expiringDocs.data?.length ?? 0), sub: 'next 30 days',    tone: 'warning' },
     ],
     openDisputes: openDisputes.count ?? 0,
-    recentKyc: snakeToCamel(recentKycRows.data ?? []).map((k) => ({
+    recentKyc: snakeToCamel<Array<Record<string, unknown> & { submittedAt?: string }>>(recentKycRows.data ?? []).map((k) => ({
       ...k,
       submitted: timeAgo(k.submittedAt),
     })),
@@ -136,11 +136,13 @@ export async function getAnalytics() {
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
-function parseAmount(amount) {
+function parseAmount(amount: string | null | undefined): number {
   const n = Number(String(amount ?? '').replace(/[^\d]/g, ''));
   return Number.isFinite(n) ? n : 0;
 }
-function formatZar(n) { return `ZAR ${n.toLocaleString('en-ZA')}`; }
+function formatZar(n: number): string { return `ZAR ${n.toLocaleString('en-ZA')}`; }
+
+interface GmvBucket { label: string; gmv: number }
 
 /**
  * Bucket transactions into 6 monthly buckets — current month and the 5
@@ -148,9 +150,9 @@ function formatZar(n) { return `ZAR ${n.toLocaleString('en-ZA')}`; }
  * bar chart in Analytics.jsx has something to render even when the
  * project has no transactions yet.
  */
-function bucketByMonth(rows) {
+function bucketByMonth(rows: Array<{ amount: string; created_at: string }>): GmvBucket[] {
   const now = new Date();
-  const buckets = [];
+  const buckets: GmvBucket[] = [];
   for (let i = 5; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const label = d.toLocaleString('en', { month: 'short' });
