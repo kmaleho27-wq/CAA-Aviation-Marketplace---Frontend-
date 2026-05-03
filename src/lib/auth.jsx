@@ -117,6 +117,25 @@ export function RequireAuth({ children }) {
 }
 
 /**
+ * Bounce users to their proper surface if they hit a route their role
+ * isn't allowed on. Sits inside RequireAuth so authentication is already
+ * verified by the time RoleGate runs.
+ *
+ *   <RoleGate allow={['OPERATOR', 'SUPPLIER', 'AMO']}>...</RoleGate>
+ *   <RoleGate allow="ADMIN">...</RoleGate>
+ */
+export function RoleGate({ allow, children }) {
+  const user = getUser();
+  if (!user) return <Navigate to="/login" replace />;
+
+  const allowed = Array.isArray(allow) ? allow : [allow];
+  if (!allowed.includes(user.role)) {
+    return <Navigate to={landingPathForRole(user.role)} replace />;
+  }
+  return children;
+}
+
+/**
  * Where each role lands after login. Maps role enum → SPA route.
  *   ADMIN                     → /admin/overview (admin trust engine)
  *   AME                       → /m/jobs        (contractor mobile app)

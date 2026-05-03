@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { RequireAuth } from './lib/auth';
+import { RequireAuth, RoleGate } from './lib/auth';
 import AppShell from './layouts/AppShell';
 import MobileShell from './layouts/MobileShell';
 import AdminShell from './layouts/AdminShell';
@@ -40,7 +40,9 @@ export default function App() {
           path="/app"
           element={
             <RequireAuth>
-              <AppShell />
+              <RoleGate allow={['OPERATOR', 'SUPPLIER', 'AMO']}>
+                <AppShell />
+              </RoleGate>
             </RequireAuth>
           }
         >
@@ -57,7 +59,9 @@ export default function App() {
           path="/m"
           element={
             <RequireAuth>
-              <MobileShell />
+              <RoleGate allow="AME">
+                <MobileShell />
+              </RoleGate>
             </RequireAuth>
           }
         >
@@ -72,7 +76,9 @@ export default function App() {
           path="/admin"
           element={
             <RequireAuth>
-              <AdminShell />
+              <RoleGate allow="ADMIN">
+                <AdminShell />
+              </RoleGate>
             </RequireAuth>
           }
         >

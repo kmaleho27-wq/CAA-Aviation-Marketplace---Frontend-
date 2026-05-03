@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link, Navigate } from 'react-router-dom';
 import { login as authLogin } from '../api/auth';
-import { landingPathForRole } from '../lib/auth';
+import { landingPathForRole, isTokenValid, getUser } from '../lib/auth';
 import Logo from '../components/Logo';
 
 export default function Login() {
@@ -11,6 +11,13 @@ export default function Login() {
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Already signed in? Skip the form and bounce to the role's surface.
+  // Avoids the "I have to log out before I see /login" UX trap.
+  if (isTokenValid()) {
+    const u = getUser();
+    return <Navigate to={landingPathForRole(u?.role)} replace />;
+  }
 
   const handleLogin = async (e) => {
     e.preventDefault();
