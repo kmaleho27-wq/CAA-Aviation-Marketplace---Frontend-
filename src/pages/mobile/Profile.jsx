@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CURRENT_USER, PROFILE_STATS, SETTINGS_ROWS } from '../../data/mobile';
+import { useApi } from '../../lib/useApi';
+import { getWallet } from '../../api/contractor';
+import { PROFILE_STATS, SETTINGS_ROWS } from '../../data/mobile';
 import { useToast } from '../../lib/toast';
-import { logout } from '../../lib/auth';
+import { logout, getUser } from '../../lib/auth';
 
 const TONE_COLOR = {
   warning: 'var(--text-warning)',
@@ -10,10 +12,25 @@ const TONE_COLOR = {
   primary: 'var(--text-primary)',
 };
 
+function initialsOf(name) {
+  if (!name) return '—';
+  return name.split(/\s+/).map((p) => p[0]).join('').slice(0, 2).toUpperCase();
+}
+
 export default function Profile() {
   const [available, setAvailable] = useState(true);
   const toast = useToast();
   const navigate = useNavigate();
+
+  // Real user (from Supabase auth) — falls back to a sane default if the
+  // contractor hasn't been linked to a personnel row yet.
+  const authUser = getUser();
+  const wallet = useApi(getWallet, []);
+  const profile = wallet.data?.user;
+
+  const displayName = profile?.name || authUser?.name || 'Contractor';
+  const displayRole = profile?.role || authUser?.role || 'AME';
+  const displayLicense = profile?.license || '—';
 
   const onToggle = () => {
     setAvailable((prev) => {
@@ -31,9 +48,9 @@ export default function Profile() {
   return (
     <div style={styles.scroll}>
       <div style={{ textAlign: 'center', marginBottom: 20 }}>
-        <div style={styles.avatar}>{CURRENT_USER.initials}</div>
-        <div style={styles.name}>{CURRENT_USER.name}</div>
-        <div style={styles.role}>{CURRENT_USER.role} · {CURRENT_USER.location}</div>
+        <div style={styles.avatar}>{initialsOf(displayName)}</div>
+        <div style={styles.name}>{displayName}</div>
+        <div style={styles.role}>{displayRole}{displayLicense !== '—' && ` · ${displayLicense}`}</div>
         <div style={styles.badge}>
           <span style={styles.badgeDot} />
           <span style={styles.badgeText}>SACAA Compliance Badge</span>

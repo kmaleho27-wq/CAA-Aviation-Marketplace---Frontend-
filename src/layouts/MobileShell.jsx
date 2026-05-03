@@ -1,6 +1,7 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { ToastProvider } from '../lib/toast';
 import { MOBILE_TABS } from '../data/mobile';
+import { logout } from '../lib/auth';
 
 const ICONS = {
   wallet: (
@@ -30,7 +31,7 @@ const ICONS = {
   ),
 };
 
-const StatusBar = () => (
+const StatusBar = ({ onSignOut }) => (
   <div style={styles.statusBar}>
     <span style={styles.statusTime}>9:41</span>
     <span style={styles.statusCarrier}>••••• ZA</span>
@@ -42,17 +43,35 @@ const StatusBar = () => (
         <rect x="9" y="0" width="2" height="10" rx="1" />
       </svg>
       <span style={styles.statusBattery}>88%</span>
+      <button
+        type="button"
+        onClick={onSignOut}
+        style={styles.signOutIcon}
+        title="Sign out"
+        aria-label="Sign out"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+          <polyline points="16 17 21 12 16 7" />
+          <line x1="21" y1="12" x2="9" y2="12" />
+        </svg>
+      </button>
     </div>
   </div>
 );
 
 export default function MobileShell() {
+  const navigate = useNavigate();
+  const handleSignOut = () => {
+    logout();
+    navigate('/login', { replace: true });
+  };
   return (
     <ToastProvider>
       <div style={styles.stage}>
         <div style={styles.phone}>
           <div style={styles.notch} />
-          <StatusBar />
+          <StatusBar onSignOut={handleSignOut} />
           <div style={styles.screen}>
             <Outlet />
           </div>
@@ -134,6 +153,16 @@ const styles = {
   statusCarrier: { fontSize: 10, color: 'var(--text-tertiary)', letterSpacing: 1 },
   statusRight: { display: 'flex', gap: 4, alignItems: 'center' },
   statusBattery: { fontSize: 10, fontWeight: 600, color: 'var(--text-tertiary)' },
+  signOutIcon: {
+    background: 'transparent',
+    border: 'none',
+    padding: '2px 4px 2px 8px',
+    cursor: 'pointer',
+    color: 'var(--text-tertiary)',
+    display: 'flex',
+    alignItems: 'center',
+    transition: 'color var(--transition-fast)',
+  },
   screen: { flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' },
   tabBar: {
     height: 80,
