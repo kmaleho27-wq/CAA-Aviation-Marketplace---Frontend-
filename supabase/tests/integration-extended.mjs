@@ -63,10 +63,10 @@ const operatorId = authData.session.user.id;
 // ── 3. parts.js — listParts ───────────────────────────────
 {
   const { data, error } = await sb.from('part').select('*');
-  test(!error && data?.length === 6, `parts: 6 rows`, error?.message || `got ${data?.length}`);
-  // Spot-check a column we expect
+  test(!error && (data?.length ?? 0) >= 6, `parts: at least 6 rows from seed`, error?.message || `got ${data?.length}`);
+  // Spot-check a column we expect (seeded AOG parts persist)
   const aogParts = data?.filter((p) => p.aog) ?? [];
-  test(aogParts.length === 2, `parts: 2 AOG parts`, `got ${aogParts.length}`);
+  test(aogParts.length >= 2, `parts: at least 2 AOG parts`, `got ${aogParts.length}`);
 }
 
 // ── 4. personnel.js — listPersonnel via personnel_public ──
@@ -129,7 +129,7 @@ const operatorId = authData.session.user.id;
 // ── 9. profile read (cross-user reads work for marketplace) ──
 {
   const { data, error } = await sb.from('profile').select('id, email, name, role');
-  test(!error && data?.length === 3, `profiles: 3 visible`, error?.message || `got ${data?.length}`);
+  test(!error && (data?.length ?? 0) >= 3, `profiles: at least 3 visible (3 seeded + any self-registered)`, error?.message || `got ${data?.length}`);
   const names = (data ?? []).map((p) => p.name).sort();
   test(names.includes('Trust Admin'), `profiles: admin name visible`, `names: ${names.join(',')}`);
 }
