@@ -26,19 +26,26 @@ export async function listParts(opts: { search?: string; category?: string } = {
 }
 
 /**
- * Procure a part: creates a Stripe payment intent and a transaction in
- * 'in-escrow' status. Stripe Connect lives in an Edge Function — wired in
- * Phase 4. Until then this throws explicitly so the UI shows a proper error
- * instead of a half-finished transaction.
+ * Procure a part. Calls the payfast-create-payment Edge Function which:
+ *   - creates a transaction row in 'in-escrow' status (buyer = current user)
+ *   - signs a PayFast checkout payload
+ *   - returns { checkoutUrl, params, transactionId, mode }
+ *
+ * The frontend then redirects the user to checkoutUrl. After they pay,
+ * PayFast notifies our payfast-itn function server-side to flip the
+ * transaction → completed and chain audit.
+ *
+ * In scaffold mode (PAYFAST_MERCHANT_ID unset on the Edge Function),
+ * `checkoutUrl` is null and `mode === 'scaffold'` — the transaction
+ * exists but no real payment was captured. Useful for demo flows.
  */
 export async function procurePart(id: string) {
-  const { data, error } = await supabase.functions.invoke('payments-create-intent', {
+  const { data, error } = await supabase.functions.invoke('payfast-create-payment', {
     body: { kind: 'parts', partId: id },
   });
   if (error) {
-    // Function not deployed yet (Phase 4) → surface a clear message.
-    if (error.message?.includes('Function not found') || error.context?.status === 404) {
-      throw new Error('Payments are not yet wired (Phase 4 — Edge Functions). The schema and audit chain are ready.');
+    if (error.message?.includes('Function not found') || (error as { context?: { status?: number } })?.context?.status === 404) {
+      throw new Error('Payments not yet deployed. Run `supabase functions deploy payfast-create-payment`.');
     }
     throw error;
   }

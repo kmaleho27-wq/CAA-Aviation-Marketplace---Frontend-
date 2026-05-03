@@ -54,16 +54,13 @@ uri = "pg-functions://postgres/public/custom_access_token_hook"
 enabled = true
 policy = "oneshot"
 
-[functions.stripe-webhook]
-verify_jwt = false  # Stripe signs the request; we verify in-handler
-
-[functions.payments-create-intent]
+[functions.payfast-create-payment]
 verify_jwt = true  # called by SPA users to start a transaction
 
-[functions.sacaa-verify]
-verify_jwt = true
+[functions.payfast-itn]
+verify_jwt = false  # PayFast doesn't send a JWT; we verify signature + IP + postback
 
-[functions.stripe-onboard-return]
+[functions.sacaa-verify]
 verify_jwt = true
 
 [functions.sacaa-sweep]
@@ -71,3 +68,8 @@ verify_jwt = false  # called by pg_cron with x-cron-secret
 
 [functions.expiry-sweep]
 verify_jwt = false  # called by pg_cron with x-cron-secret
+
+# ── Deprecated (Stripe-flavored, kept deployed but unreachable from app) ──
+# [functions.stripe-webhook]
+# [functions.payments-create-intent]
+# [functions.stripe-onboard-return]

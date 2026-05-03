@@ -11,7 +11,8 @@ import { supabase, snakeToCamel } from '../lib/supabase';
  * Filters:
  *   - filter: 'available' | 'verified' | 'all' (legacy semantics)
  */
-export async function listPersonnel({ filter = 'all' } = {}) {
+export async function listPersonnel(opts: { filter?: 'available' | 'verified' | 'all' } = {}) {
+  const { filter = 'all' } = opts;
   let q = supabase
     .from('personnel_public')
     .select('*')
@@ -26,17 +27,17 @@ export async function listPersonnel({ filter = 'all' } = {}) {
 }
 
 /**
- * Hire a contractor: creates a Personnel-type transaction in 'in-escrow'
- * with a Stripe payment intent. Goes through the same Edge Function as
- * procurePart. Phase 4 wires it.
+ * Hire a contractor. Creates a Personnel-type transaction in 'in-escrow'
+ * status and signs a PayFast checkout payload. Same Edge Function path
+ * as procurePart, just with kind='personnel'.
  */
-export async function hireContractor(id) {
-  const { data, error } = await supabase.functions.invoke('payments-create-intent', {
+export async function hireContractor(id: string) {
+  const { data, error } = await supabase.functions.invoke('payfast-create-payment', {
     body: { kind: 'personnel', personnelId: id },
   });
   if (error) {
-    if (error.message?.includes('Function not found') || error.context?.status === 404) {
-      throw new Error('Payments are not yet wired (Phase 4 — Edge Functions). The schema and audit chain are ready.');
+    if (error.message?.includes('Function not found') || (error as { context?: { status?: number } })?.context?.status === 404) {
+      throw new Error('Payments not yet deployed. Run `supabase functions deploy payfast-create-payment`.');
     }
     throw error;
   }
