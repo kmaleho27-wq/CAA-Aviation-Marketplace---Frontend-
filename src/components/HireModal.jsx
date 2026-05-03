@@ -49,12 +49,21 @@ export default function HireModal({ contractor: c, onClose }) {
     if (submitting) return;
     setSubmitting(true);
     try {
+      // payfast-create-payment returns transactionId/checkoutUrl/mode.
+      // Live/sandbox: redirect to PayFast. Scaffold: record only.
       const result = await hireContractor(c.id);
-      setContractId(result.contractId);
+      setContractId(result.transactionId);
+
+      if (result.checkoutUrl) {
+        toast.info('Redirecting to PayFast — pay deposit to confirm contract');
+        window.location.href = result.checkoutUrl;
+        return;
+      }
+
       setDone(true);
-      toast.success(`Contract sent to ${c.name} — awaiting acceptance`);
+      toast.success(`Contract sent to ${c.name} (scaffold, no real payment)`);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Could not send contract.');
+      toast.error(err.response?.data?.message || err.message || 'Could not send contract.');
     } finally {
       setSubmitting(false);
     }

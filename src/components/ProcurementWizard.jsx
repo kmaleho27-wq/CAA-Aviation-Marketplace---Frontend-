@@ -51,13 +51,28 @@ export default function ProcurementWizard({ part, onClose, onCompleted }) {
     if (submitting) return;
     setSubmitting(true);
     try {
-      const { transaction } = await procurePart(part.id);
-      setTxnId(transaction.id);
+      // payfast-create-payment returns:
+      //   { transactionId, pfPaymentId, checkoutUrl, params, enabled, mode }
+      // mode='scaffold' → no real checkout, just record the transaction
+      // mode='sandbox' or 'live' → redirect the browser to PayFast
+      const result = await procurePart(part.id);
+      setTxnId(result.transactionId);
+
+      if (result.checkoutUrl) {
+        toast.info('Redirecting to PayFast — complete payment to lock escrow');
+        // Hard navigation to PayFast's hosted checkout. PayFast then
+        // redirects back to /app/transactions?pf=ok&txn=... and the
+        // ITN webhook server-side finalizes status + audit chain.
+        window.location.href = result.checkoutUrl;
+        return;
+      }
+
+      // Scaffold mode — no real PayFast call. Treat as completed inline.
       setDone(true);
-      toast.success(`Order placed — ${part.name} locked in escrow`);
-      if (onCompleted) onCompleted(transaction);
+      toast.success(`Order placed — ${part.name} (scaffold, no real payment)`);
+      if (onCompleted) onCompleted({ id: result.transactionId });
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Could not place order. Please try again.');
+      toast.error(err.response?.data?.message || err.message || 'Could not place order. Please try again.');
     } finally {
       setSubmitting(false);
     }
