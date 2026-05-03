@@ -98,33 +98,40 @@ export async function resolveDispute(id, outcome) {
 
 // ── Analytics ────────────────────────────────────────────────────────
 /**
- * Heavier dashboard: GMV by day for the last 30 days, KPI bar, etc.
- * Computed from the transaction table. Real-time enough for v1; if it
- * becomes hot, materialize into a `daily_gmv` summary.
+ * Heavier dashboard. Returns the shape src/pages/admin/Analytics.jsx
+ * consumes:
+ *   kpis:         [{ label, value, sub, tone }]
+ *   gmv:          [{ label: 'Jun', gmv: <ZAR millions> }]   — 6 monthly buckets
+ *   expiryWatch:  [{ doc, name, days }]                      — top 10 expiring docs
  */
 export async function getAnalytics() {
-  // Last 30 days of completed transactions, summed by day.
-  const since = new Date();
-  since.setDate(since.getDate() - 30);
-
-  const [txns, completedCount, escrowSum] = await Promise.all([
-    supabase.from('transaction').select('amount, created_at, status').gte('created_at', since.toISOString()),
+  const [allTxns, completedCount, escrowSum, expiringDocs] = await Promise.all([
+    supabase.from('transaction').select('amount, created_at, status'),
     supabase.from('transaction').select('*', { count: 'exact', head: true }).eq('status', 'completed'),
     supabase.from('transaction').select('amount, status').in('status', ['in-escrow', 'rts-pending']),
+    supabase.from('document').select('name, type, expires').eq('status', 'expiring').not('expires', 'is', null).order('expires', { ascending: true }).limit(10),
   ]);
 
-  for (const r of [txns, completedCount, escrowSum]) if (r.error) throw r.error;
+  for (const r of [allTxns, completedCount, escrowSum, expiringDocs]) if (r.error) throw r.error;
 
-  const gmvByDay = bucketByDay(txns.data ?? []);
   const escrowZar = (escrowSum.data ?? []).reduce((s, t) => s + parseAmount(t.amount), 0);
+  const gmv = bucketByMonth(allTxns.data ?? []);
+  const gmvTotal = gmv.reduce((s, b) => s + b.gmv, 0);
 
   return {
     kpis: [
-      { label: 'Completed (30d)', value: String(completedCount.count ?? 0), tone: 'positive' },
-      { label: 'Escrow (live)',   value: formatZar(escrowZar),                tone: 'neutral'  },
-      { label: 'GMV (30d)',       value: formatZar(gmvByDay.reduce((s, b) => s + b.value, 0)), tone: 'positive' },
+      { label: 'Completed all-time', value: String(completedCount.count ?? 0), sub: 'transactions',      tone: 'success' },
+      { label: 'Escrow (live)',      value: formatZar(escrowZar),               sub: 'awaiting RTS',      tone: 'warning' },
+      { label: 'GMV (6 months)',     value: `ZAR ${gmvTotal}M`,                  sub: 'gross merchandise', tone: 'primary' },
     ],
-    gmvBars: gmvByDay,
+    gmv,
+    expiryWatch: (expiringDocs.data ?? []).map((d) => ({
+      doc:  d.type ?? 'Document',
+      name: d.name,
+      days: d.expires
+        ? Math.max(0, Math.floor((new Date(d.expires).getTime() - Date.now()) / 86_400_000))
+        : 0,
+    })),
   };
 }
 
@@ -135,13 +142,25 @@ function parseAmount(amount) {
 }
 function formatZar(n) { return `ZAR ${n.toLocaleString('en-ZA')}`; }
 
-function bucketByDay(rows) {
-  const buckets = new Map();
-  for (const r of rows) {
-    const day = r.created_at.slice(0, 10);
-    buckets.set(day, (buckets.get(day) ?? 0) + parseAmount(r.amount));
+/**
+ * Bucket transactions into 6 monthly buckets — current month and the 5
+ * preceding ones. Returns at minimum 6 entries (zero-filled) so the
+ * bar chart in Analytics.jsx has something to render even when the
+ * project has no transactions yet.
+ */
+function bucketByMonth(rows) {
+  const now = new Date();
+  const buckets = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const label = d.toLocaleString('en', { month: 'short' });
+    const totalCents = rows
+      .filter((r) => {
+        const rd = new Date(r.created_at);
+        return rd.getFullYear() === d.getFullYear() && rd.getMonth() === d.getMonth();
+      })
+      .reduce((s, t) => s + parseAmount(t.amount), 0);
+    buckets.push({ label, gmv: Math.max(0, Math.round(totalCents / 1_000_000)) });
   }
-  return Array.from(buckets.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([day, value]) => ({ day, value }));
+  return buckets;
 }
