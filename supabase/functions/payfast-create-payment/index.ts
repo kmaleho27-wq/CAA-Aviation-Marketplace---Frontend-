@@ -122,8 +122,8 @@ Deno.serve(async (req) => {
     ['custom_str3', user.userId],
   ];
 
-  const signature = await pfSign(fields, cfg.passphrase);
-  fields.push(['signature', signature]);
+  const signed = await pfSign(fields, cfg.passphrase);
+  fields.push(['signature', signed.sig]);
 
   const params = new URLSearchParams();
   for (const [k, v] of fields) params.set(k, v);

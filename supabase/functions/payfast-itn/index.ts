@@ -42,12 +42,17 @@ Deno.serve(async (req) => {
 
   // ─── Layer 1: signature verification ────────────────────────────
   const receivedSig = params.get('signature') ?? '';
-  const computedSig = await pfSign(
-    fields.filter(([k]) => k !== 'signature'),
-    cfg.passphrase,
-  );
+  const filteredFields = fields.filter(([k]) => k !== 'signature');
+  const { sig: computedSig, signedString } = await pfSign(filteredFields, cfg.passphrase);
   if (receivedSig !== computedSig) {
-    console.warn('[payfast-itn] signature mismatch', { received: receivedSig, computed: computedSig });
+    console.warn('[payfast-itn] signature mismatch', {
+      received: receivedSig,
+      computed: computedSig,
+      signed_string: signedString,
+      raw_body: rawBody,
+      field_order: filteredFields.map(([k]) => k),
+      passphrase_set: cfg.passphrase ? 'yes (' + cfg.passphrase.length + ' chars)' : 'no',
+    });
     return new Response('Invalid signature', { status: 400 });
   }
 
@@ -117,11 +122,16 @@ Deno.serve(async (req) => {
   }
 
   // Always record the event so future deliveries dedupe.
-  await sb.from('stripe_processed_event').insert({
+  const { error: dedupeErr } = await sb.from('stripe_processed_event').insert({
     event_id: pfPaymentId,
     intent_id: pfPaymentId,
     event_type: `payfast.${status.toLowerCase()}`,
   });
+  if (dedupeErr) {
+    // Don't fail the whole request — state change already committed and
+    // PayFast will treat a non-200 as a retry signal. Log loudly.
+    console.warn('[payfast-itn] dedupe insert failed:', dedupeErr);
+  }
 
   return jsonResponse({
     received: true,

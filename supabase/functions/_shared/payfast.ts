@@ -57,11 +57,14 @@ export function pfEncode(value: string): string {
 export async function pfSign(
   fields: Array<[string, string]>,
   passphrase: string,
-): Promise<string> {
+): Promise<{ sig: string; signedString: string }> {
   const parts: string[] = [];
   for (const [k, v] of fields) {
-    if (v === '' || v === null || v === undefined) continue;
+    if (v === null || v === undefined) continue;
     if (k === 'signature') continue;
+    // Include empty-string fields as `key=` — PayFast's ITN signature
+    // includes empty fields even though their docs say to exclude them.
+    // Verified against a real ITN payload (commit log).
     parts.push(`${k}=${pfEncode(String(v))}`);
   }
   let signedString = parts.join('&');
@@ -71,7 +74,7 @@ export async function pfSign(
 
   const buf = new TextEncoder().encode(signedString);
   const hash = await stdCrypto.subtle.digest('MD5', buf);
-  return encodeHex(new Uint8Array(hash));
+  return { sig: encodeHex(new Uint8Array(hash)), signedString };
 }
 
 /**
