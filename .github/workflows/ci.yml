@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    name: Build + lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Production build
+        run: npm run build
+        env:
+          # Use placeholder values so the bundle compiles. Real env vars
+          # are injected by Netlify at deploy time.
+          VITE_SUPABASE_URL: https://placeholder.supabase.co
+          VITE_SUPABASE_ANON_KEY: placeholder-anon-key
+          VITE_USE_MOCK_API: "false"
+
+      - name: Bundle size report
+        run: |
+          ls -lh dist/assets/*.js dist/assets/*.css 2>/dev/null || true
+          echo "Total dist/ size: $(du -sh dist/ | cut -f1)"
+
+  smoke-test-live:
+    name: Live smoke tests
+    runs-on: ubuntu-latest
+    # Only run if Supabase secrets are configured. New forks / PRs without
+    # access to secrets get a clean skip rather than a false failure.
+    if: ${{ vars.SKIP_LIVE_TESTS != 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check secrets are present
+        id: check
+        env:
+          URL: ${{ secrets.SUPABASE_URL }}
+          KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$URL" ] || [ -z "$KEY" ]; then
+            echo "have_secrets=false" >> $GITHUB_OUTPUT
+            echo "::warning::SUPABASE_URL or SUPABASE_ANON_KEY missing — skipping live tests."
+          else
+            echo "have_secrets=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Login + JWT hook + RLS basics (integration-live)
+        if: steps.check.outputs.have_secrets == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: node supabase/tests/integration-live.mjs
+
+      - name: Every API module read sweep (integration-extended)
+        if: steps.check.outputs.have_secrets == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: node supabase/tests/integration-extended.mjs

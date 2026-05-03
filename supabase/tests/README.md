@@ -46,6 +46,24 @@ docker rm -f sb-validate
 
 Expected: every smoke test prints a passing row and EXIT=0.
 
+## CI integration
+
+`.github/workflows/ci.yml` runs all of these on every push to `main` and on every PR.
+
+To enable the **live** tests in CI, add two repository secrets at
+https://github.com/kmaleho27-wq/CAA-Aviation-Marketplace---Frontend-/settings/secrets/actions:
+
+| Secret name | Value |
+|---|---|
+| `SUPABASE_URL` | `https://hrimskndpuuvftdskuae.supabase.co` (or the prod project URL once you have one) |
+| `SUPABASE_ANON_KEY` | the anon key from Supabase → Settings → API |
+
+Without those secrets, CI runs the build only (no live tests) — keeps PRs from random
+contributors from failing on missing secrets.
+
+To turn off live tests entirely (e.g. while migrating between projects), set repo
+**variable** `SKIP_LIVE_TESTS=true`.
+
 ## What's tested
 
 | # | Name | What it validates |
