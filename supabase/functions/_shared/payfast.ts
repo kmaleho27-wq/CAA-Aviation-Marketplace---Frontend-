@@ -102,43 +102,21 @@ export async function pfValidatePostback(
 }
 
 /**
- * IP-allowlist check (last layer of the 3-layer ITN auth: signature,
- * source IP, validate-postback). Approved PayFast source IPs from their
- * docs as of 2024.
+ * IP allowlist — DISABLED.
+ *
+ * PayFast's documented IP ranges go stale faster than we can update them.
+ * Real ITN traffic in production has been observed from 102.216.36.x
+ * (AFRINIC) which isn't in any of their published lists. Maintaining
+ * the allowlist creates more outages than it prevents intrusions.
+ *
+ * The other two layers are sufficient on their own:
+ *   - MD5 signature with merchant-only passphrase (forge-resistant)
+ *   - Server-to-server postback to /eng/query/validate (anti-replay,
+ *     anti-spoof; PayFast confirms the params are theirs)
+ *
+ * If PayFast publishes a stable IP list as a JSON endpoint in future,
+ * we can re-enable a dynamically-fetched allowlist as defense in depth.
  */
-const PAYFAST_ALLOWED_IPS = new Set([
-  '197.97.145.144',
-  '197.97.145.145',
-  '197.97.145.146',
-  '197.97.145.147',
-  '197.97.145.148',
-  '197.97.145.149',
-  '197.97.145.150',
-  '197.97.145.151',
-  '197.97.145.152',
-  '197.97.145.153',
-  '197.97.145.154',
-  '197.97.145.155',
-  '197.97.145.156',
-  '197.97.145.157',
-  '197.97.145.158',
-  '197.97.145.159',
-  '41.74.179.194',
-  '41.74.179.195',
-  '41.74.179.196',
-  '41.74.179.197',
-  '41.74.179.198',
-  '41.74.179.199',
-  '41.74.179.200',
-  '41.74.179.203',
-  '41.74.179.204',
-  '41.74.179.210',
-]);
-
-export function isPayfastSourceIp(ip: string | null): boolean {
-  if (!ip) return false;
-  // Sandbox traffic comes from a wider set including Cloudflare. Skip the
-  // strict check in sandbox; signature + validate-postback are still in force.
-  if (Deno.env.get('PAYFAST_LIVE') !== 'true') return true;
-  return PAYFAST_ALLOWED_IPS.has(ip.trim());
+export function isPayfastSourceIp(_ip: string | null): boolean {
+  return true;
 }
