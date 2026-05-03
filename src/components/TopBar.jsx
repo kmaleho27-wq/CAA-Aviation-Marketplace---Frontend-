@@ -1,5 +1,6 @@
 import { useLocation } from 'react-router-dom';
 import { NAV_ITEMS } from '../data/mock';
+import { getUser, roleLabel } from '../lib/auth';
 
 const SearchIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -24,6 +25,8 @@ function pageTitle(pathname) {
 export default function TopBar({ unread = 0, onNotifClick }) {
   const { pathname } = useLocation();
   const title = pageTitle(pathname);
+  const user = getUser();
+  const modeLabel = `${roleLabel(user?.role)} Mode`;
 
   return (
     <header style={styles.bar}>
@@ -56,7 +59,7 @@ export default function TopBar({ unread = 0, onNotifClick }) {
 
         <div style={styles.roleChip}>
           <span style={styles.roleDot} />
-          Operator Mode
+          {modeLabel}
         </div>
       </div>
     </header>

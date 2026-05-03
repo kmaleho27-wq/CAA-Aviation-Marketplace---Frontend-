@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { login as authLogin } from '../api/auth';
+import { landingPathForRole } from '../lib/auth';
 import Logo from '../components/Logo';
 
 export default function Login() {
@@ -10,7 +11,6 @@ export default function Login() {
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
-  const redirectTo = location.state?.from?.pathname || '/app/dashboard';
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -19,7 +19,12 @@ export default function Login() {
     try {
       // In mock mode this stores token/user via setSession internally.
       // In real mode Supabase persists the session and lib/auth.jsx mirrors it.
-      await authLogin(email, password);
+      const user = await authLogin(email, password);
+
+      // If the user landed on /login because RequireAuth bounced them,
+      // honor that path. Otherwise route to the role-appropriate surface.
+      const fromPath = location.state?.from?.pathname;
+      const redirectTo = fromPath || landingPathForRole(user?.role);
       navigate(redirectTo, { replace: true });
     } catch (err) {
       setError(

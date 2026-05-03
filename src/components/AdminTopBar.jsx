@@ -1,16 +1,22 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ADMIN_NAV } from '../data/admin';
-import { logout } from '../lib/auth';
+import { logout, getUser } from '../lib/auth';
 
 function pageTitle(pathname) {
   const match = ADMIN_NAV.find((n) => pathname.startsWith(n.path));
   return match ? match.label : 'Admin';
 }
 
+function initialsOf(name) {
+  if (!name) return 'AD';
+  return name.split(/\s+/).map((p) => p[0]).join('').slice(0, 2).toUpperCase();
+}
+
 export default function AdminTopBar() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const title = pageTitle(pathname);
+  const user = getUser();
 
   const handleLogout = () => {
     logout();
@@ -23,7 +29,7 @@ export default function AdminTopBar() {
       <div style={styles.right}>
         <div style={styles.version}>Naluka Admin · v1.0</div>
         <button onClick={handleLogout} style={styles.signOut}>Sign out</button>
-        <div style={styles.avatar}>AD</div>
+        <div style={styles.avatar}>{initialsOf(user?.name)}</div>
       </div>
     </header>
   );

@@ -115,3 +115,35 @@ export function RequireAuth({ children }) {
   }
   return children;
 }
+
+/**
+ * Where each role lands after login. Maps role enum → SPA route.
+ *   ADMIN                     → /admin/overview (admin trust engine)
+ *   AME                       → /m/jobs        (contractor mobile app)
+ *   OPERATOR / AMO / SUPPLIER → /app/dashboard (operator web app)
+ */
+export function landingPathForRole(role) {
+  switch (role) {
+    case 'ADMIN':    return '/admin/overview';
+    case 'AME':      return '/m/jobs';
+    case 'OPERATOR':
+    case 'AMO':
+    case 'SUPPLIER':
+    default:         return '/app/dashboard';
+  }
+}
+
+/**
+ * Human label for the role chip in the topbar. AME → "Engineer" reads
+ * better than "Ame".
+ */
+export function roleLabel(role) {
+  switch (role) {
+    case 'ADMIN':    return 'Admin';
+    case 'AME':      return 'Engineer';
+    case 'AMO':      return 'Maintenance Org';
+    case 'OPERATOR': return 'Operator';
+    case 'SUPPLIER': return 'Supplier';
+    default:         return 'User';
+  }
+}
