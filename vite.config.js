@@ -11,7 +11,7 @@ export default defineConfig({
       // iteration > controlled rollouts. Switch to 'prompt' once you
       // have real users and want a "new version available" UX.
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico'],
+      includeAssets: ['favicon.ico', 'icon.svg'],
       manifest: {
         name: 'Naluka — Aviation Marketplace',
         short_name: 'Naluka',
@@ -22,13 +22,26 @@ export default defineConfig({
         display: 'standalone',
         start_url: '/',
         scope: '/',
-        // ICONS LEFT EMPTY ON PURPOSE — needs a 512x512 PNG source.
-        // To add: drop public/icon-source.png (512x512), run
+        // SVG icon used directly. Modern browsers (Chrome 87+, Safari
+        // 16.4+, Firefox 113+) accept SVG icons in the manifest. iOS
+        // Safari and older Android still want PNGs — to add raster sizes
+        // later, drop public/icon-source.png (512x512) and run:
         //   npx @vite-pwa/assets-generator --preset minimal-2023 public/icon-source.png
-        // then add the generated icons to this array. Until then,
-        // Lighthouse complains but the SW still works and the app is
-        // still installable on most browsers via the address-bar menu.
-        icons: [],
+        // then add the generated icons here.
+        icons: [
+          {
+            src: '/icon.svg',
+            sizes: 'any',
+            type: 'image/svg+xml',
+            purpose: 'any',
+          },
+          {
+            src: '/icon.svg',
+            sizes: 'any',
+            type: 'image/svg+xml',
+            purpose: 'maskable',
+          },
+        ],
       },
       workbox: {
         // Precache the static shell so cold visits while offline still

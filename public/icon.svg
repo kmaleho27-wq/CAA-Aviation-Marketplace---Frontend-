@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Background: deep navy with rounded square (matches theme_color #0F1A33) -->
+  <rect width="512" height="512" fill="#0F1A33" rx="96" ry="96"/>
+
+  <!-- Naluka network mark, scaled from the Logo.jsx 44×44 viewBox -->
+  <g transform="translate(96, 96) scale(7.27)">
+    <!-- Hub node (left, filled) -->
+    <circle cx="10" cy="22" r="6" stroke="#D4A934" stroke-width="2" fill="none"/>
+    <circle cx="10" cy="22" r="2.5" fill="#D4A934"/>
+
+    <!-- Connector lines to satellite nodes -->
+    <line x1="16" y1="18" x2="26" y2="12" stroke="#D4A934" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="16" y1="22" x2="28" y2="22" stroke="#D4A934" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="16" y1="26" x2="26" y2="32" stroke="#D4A934" stroke-width="1.5" stroke-linecap="round"/>
+
+    <!-- Satellite nodes -->
+    <circle cx="28" cy="12" r="3" stroke="#D4A934" stroke-width="1.5" fill="none"/>
+    <circle cx="30" cy="22" r="3" fill="#D4A934" fill-opacity="0.25" stroke="#D4A934" stroke-width="1.5"/>
+    <circle cx="28" cy="32" r="3" stroke="#D4A934" stroke-width="1.5" fill="none"/>
+  </g>
+</svg>
