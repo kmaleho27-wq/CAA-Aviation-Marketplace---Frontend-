@@ -1,0 +1,5 @@
+# Supabase CLI runtime artifacts
+.branches/
+.temp/
+.env
+.env.local

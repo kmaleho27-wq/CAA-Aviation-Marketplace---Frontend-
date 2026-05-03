@@ -1,0 +1,43 @@
+# Naluka — Netlify configuration
+# Replaces vercel.json. SPA build → static dist/, with the standard
+# fallback redirect so React Router takes over on every path.
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# SPA fallback: every unknown path serves index.html so the React router
+# handles client-side routing. Must come AFTER any function or asset
+# rules — Netlify processes redirects top-to-bottom.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Long-lived cache for hashed asset bundles (Vite emits content hashes).
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# index.html itself must NOT be cached aggressively — otherwise users
+# get stuck on a stale shell pointing at deleted asset hashes.
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# Common security headers. Adjust frame-ancestors if you embed.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+# Build step ignores the supabase/ directory and the deleted server/.
+# Netlify auto-detects Vite — no further config needed.

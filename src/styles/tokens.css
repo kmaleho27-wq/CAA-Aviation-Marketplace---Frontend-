@@ -1,0 +1,142 @@
+/*
+ * Naluka Design Tokens
+ * Derived from design-reference/ui-kits/webapp (the "navy + mustard" theme)
+ */
+
+:root {
+  /* ─── Color primitives ─────────────────────────── */
+  --color-obsidian:    #050918;
+  --color-midnight:    #070C20;
+  --color-navy-900:    #0E1530;
+  --color-navy-800:    #152043;
+  --color-navy-700:    #243861;
+
+  --color-cream:       #F4ECD4;
+  --color-sand-200:    #B8AC8C;
+  --color-sand-400:    #847B66;
+  --color-sand-600:    #5A5240;
+
+  --color-mustard-500: #D4A934;
+  --color-mustard-400: #E8C45C;
+  --color-mustard-200: #FBD08C;
+
+  --color-rust-600:    #C4421E;
+  --color-rust-500:    #DC5A36;
+  --color-rust-200:    #ECAB8A;
+
+  --color-sage-500:    #5BAA8E;
+  --color-sage-400:    #6FBFA0;
+
+  --color-red-500:     #D45656;
+  --color-red-400:     #E07070;
+
+  /* ─── Surfaces ─────────────────────────────────── */
+  --surface-base:      var(--color-midnight);
+  --surface-sidebar:   var(--color-obsidian);
+  --surface-raised:    var(--color-navy-900);
+  --surface-card:      var(--color-navy-800);
+  --surface-input:     var(--color-navy-700);
+  --surface-hover:     rgba(255, 255, 255, 0.04);
+
+  /* ─── Borders ──────────────────────────────────── */
+  --border-subtle:     rgba(255, 255, 255, 0.07);
+  --border-default:    rgba(255, 255, 255, 0.12);
+  --border-strong:     rgba(255, 255, 255, 0.20);
+
+  /* ─── Text ─────────────────────────────────────── */
+  --text-primary:      var(--color-cream);
+  --text-secondary:    var(--color-sand-200);
+  --text-tertiary:     var(--color-sand-400);
+  --text-overline:     var(--color-sand-600);
+  --text-accent:       var(--color-mustard-500);
+  --text-success:      var(--color-sage-500);
+  --text-warning:      var(--color-mustard-400);
+  --text-danger:       var(--color-red-500);
+  --text-aog:          var(--color-rust-500);
+
+  /* ─── Actions ─────────────────────────────────── */
+  --action-primary:        var(--color-mustard-500);
+  --action-primary-hover:  var(--color-mustard-400);
+  --action-primary-text:   var(--color-midnight);
+
+  --action-aog:            var(--color-rust-600);
+  --action-aog-hover:      var(--color-rust-500);
+  --action-aog-text:       #FFFFFF;
+
+  /* ─── Status (badge bg/text/border tuples) ─────── */
+  --status-verified-bg:     rgba(58, 138, 110, 0.12);
+  --status-verified-text:   #5BAA8E;
+  --status-verified-border: rgba(58, 138, 110, 0.25);
+
+  --status-expiring-bg:     rgba(212, 169, 52, 0.12);
+  --status-expiring-text:   #E8C45C;
+  --status-expiring-border: rgba(212, 169, 52, 0.25);
+
+  --status-expired-bg:      rgba(184, 56, 56, 0.12);
+  --status-expired-text:    #D45656;
+  --status-expired-border:  rgba(184, 56, 56, 0.25);
+
+  --status-aog-bg:          rgba(196, 66, 30, 0.20);
+  --status-aog-text:        #DC5A36;
+  --status-aog-border:      rgba(196, 66, 30, 0.35);
+
+  /* ─── Spacing (4px base) ───────────────────────── */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ─── Radii ────────────────────────────────────── */
+  --radius-sm:   4px;
+  --radius-md:   6px;
+  --radius-lg:   8px;
+  --radius-xl:   12px;
+  --radius-pill: 100px;
+
+  /* ─── Shadows / glows ──────────────────────────── */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --glow-mustard: 0 0 16px rgba(212, 169, 52, 0.25);
+  --glow-aog:     0 0 16px rgba(196, 66, 30, 0.35);
+
+  /* ─── Typography ───────────────────────────────── */
+  --font-display: 'Bebas Neue', sans-serif;
+  --font-body:    'DM Sans', sans-serif;
+  --font-mono:    'IBM Plex Mono', monospace;
+
+  /* ─── Transitions ──────────────────────────────── */
+  --transition-fast: 150ms ease-out;
+  --transition-base: 200ms ease-out;
+  --transition-slow: 350ms ease-out;
+
+  /* ─── Layout ───────────────────────────────────── */
+  --sidebar-width: 220px;
+  --topbar-height: 52px;
+}
+
+/* ─── Animations ─────────────────────────────────── */
+@keyframes pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(196, 66, 30, 0.5); }
+  50%      { opacity: 0.8; box-shadow: 0 0 0 5px rgba(196, 66, 30, 0); }
+}
+
+@keyframes aogRing {
+  0%   { transform: scale(1);   opacity: 0.8; }
+  100% { transform: scale(2.2); opacity: 0;   }
+}
+
+@keyframes shimmer {
+  0%   { background-position:  200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
