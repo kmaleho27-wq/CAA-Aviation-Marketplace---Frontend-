@@ -17,6 +17,10 @@ export default function Register() {
   const [role, setRole] = useState('AME');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  // After a successful signup with email-confirmation on, supabase returns
+  // a user but no session — we show a "check your inbox" panel instead of
+  // navigating away. With confirmation off, we navigate to /login as before.
+  const [submitted, setSubmitted] = useState(null);
   const navigate = useNavigate();
 
   const handleRegister = async (e) => {
@@ -24,8 +28,16 @@ export default function Register() {
     setError('');
     setSubmitting(true);
     try {
-      await authRegister({ name, email, password, role });
-      navigate('/login', { replace: true });
+      const result = await authRegister({ name, email, password, role });
+      // Supabase signUp returns { id, email, name, role }. If email
+      // confirmation is enabled, no session yet — show "check inbox".
+      // If confirmation is OFF, the user is already logged in (session
+      // was set by the api/auth.js setSession call) — navigate.
+      if (result?.id && localStorage.getItem('token')) {
+        navigate('/login', { replace: true });
+      } else {
+        setSubmitted({ email });
+      }
     } catch (err) {
       setError(
         err.response?.data?.message
@@ -36,6 +48,30 @@ export default function Register() {
       setSubmitting(false);
     }
   };
+
+  if (submitted) {
+    return (
+      <div style={styles.page}>
+        <div style={styles.card}>
+          <div style={{ marginBottom: 28 }}>
+            <Logo size={32} subtitle="Aviation Platform" />
+          </div>
+          <div style={styles.overline}>Almost there</div>
+          <h1 style={styles.h1}>Check your inbox</h1>
+          <p style={styles.sub}>
+            We sent a confirmation link to <strong style={{ color: 'var(--text-primary)' }}>{submitted.email}</strong>.
+            Click the link to activate your account — it'll bring you back here signed in.
+          </p>
+          <div style={{ ...styles.error, background: 'rgba(58, 138, 110, 0.08)', borderLeft: '3px solid var(--color-sage-500)', color: 'var(--color-sage-500)', borderColor: 'rgba(58, 138, 110, 0.30)', marginTop: 22 }}>
+            Email not arriving? Check your spam folder. The link expires in 24 hours.
+          </div>
+          <p style={styles.footer}>
+            Already confirmed? <Link to="/login" style={styles.link}>Sign in</Link>
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={styles.page}>
