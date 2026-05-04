@@ -8,7 +8,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "db:seed": "node scripts/seed-supabase.mjs"
+    "db:seed": "node scripts/seed-supabase.mjs",
+    "icons": "node scripts/generate-pwa-icons.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
@@ -21,6 +22,7 @@
     "@types/react": "^18.2.37",
     "@types/react-dom": "^18.2.17",
     "@vitejs/plugin-react": "^4.2.0",
+    "sharp": "^0.34.5",
     "typescript": "^6.0.3",
     "vite": "^5.0.0",
     "vite-plugin-pwa": "^0.17.0"

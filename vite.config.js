@@ -11,7 +11,14 @@ export default defineConfig({
       // iteration > controlled rollouts. Switch to 'prompt' once you
       // have real users and want a "new version available" UX.
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'icon.svg'],
+      includeAssets: [
+        'favicon.ico',
+        'icon.svg',
+        'icon-192.png',
+        'icon-512.png',
+        'icon-512-maskable.png',
+        'apple-touch-icon.png',
+      ],
       manifest: {
         name: 'Naluka — Aviation Marketplace',
         short_name: 'Naluka',
@@ -22,25 +29,16 @@ export default defineConfig({
         display: 'standalone',
         start_url: '/',
         scope: '/',
-        // SVG icon used directly. Modern browsers (Chrome 87+, Safari
-        // 16.4+, Firefox 113+) accept SVG icons in the manifest. iOS
-        // Safari and older Android still want PNGs — to add raster sizes
-        // later, drop public/icon-source.png (512x512) and run:
-        //   npx @vite-pwa/assets-generator --preset minimal-2023 public/icon-source.png
-        // then add the generated icons here.
+        // SVG for modern browsers (Chrome 87+, Safari 16.4+, Firefox
+        // 113+). PNG fallbacks for iOS Safari "Add to Home Screen" and
+        // older Android — generated from the SVG by:
+        //   node scripts/generate-pwa-icons.mjs   (or `npm run icons`)
         icons: [
-          {
-            src: '/icon.svg',
-            sizes: 'any',
-            type: 'image/svg+xml',
-            purpose: 'any',
-          },
-          {
-            src: '/icon.svg',
-            sizes: 'any',
-            type: 'image/svg+xml',
-            purpose: 'maskable',
-          },
+          { src: '/icon.svg',              sizes: 'any',     type: 'image/svg+xml', purpose: 'any' },
+          { src: '/icon.svg',              sizes: 'any',     type: 'image/svg+xml', purpose: 'maskable' },
+          { src: '/icon-192.png',          sizes: '192x192', type: 'image/png',     purpose: 'any' },
+          { src: '/icon-512.png',          sizes: '512x512', type: 'image/png',     purpose: 'any' },
+          { src: '/icon-512-maskable.png', sizes: '512x512', type: 'image/png',     purpose: 'maskable' },
         ],
       },
       workbox: {
