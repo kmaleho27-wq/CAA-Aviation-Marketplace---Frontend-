@@ -3,6 +3,14 @@ import { Link, useNavigate } from 'react-router-dom';
 import { register as authRegister } from '../api/auth';
 import Logo from '../components/Logo';
 
+// Hide the marketing/brand panel on narrow viewports. The form column
+// is `flex: 1 1 0`, so it expands to fill the page when this hides.
+const RESPONSIVE_CSS = `
+  @media (max-width: 900px) {
+    .naluka-register-brand { display: none !important; }
+  }
+`;
+
 // ── Account types ────────────────────────────────────────────────
 // Maps each user-facing account type to the platform role enum
 // (profile.role) and whether the discipline picker shows.
@@ -142,25 +150,64 @@ export default function Register() {
     }
   };
 
+  // Left brand panel — same on submitted-success state and form state.
+  // Hidden on viewports < 900px via the responsive <style> rule below.
+  const BrandPanel = (
+    <aside className="naluka-register-brand" style={styles.brandPanel}>
+      <div style={styles.brandInner}>
+        <Logo size={32} subtitle="Aviation Platform" />
+        <div style={styles.brandHero}>
+          <div style={styles.brandOverline}>
+            <span style={styles.brandOverlineRule} />
+            Africa's Aviation Trust Engine
+          </div>
+          <h2 style={styles.brandH2}>
+            Every flight.<br />Every crew.<br />
+            <em style={styles.brandH2Em}>Verified.</em>
+          </h2>
+          <p style={styles.brandLead}>
+            Join Naluka and operate inside Africa's only SACAA-compliance-gated
+            aviation marketplace — pilots, cabin crew, engineers, ATC, DAMEs,
+            RPAS and ground ops.
+          </p>
+        </div>
+        <div style={styles.brandTrust}>
+          {[
+            'SACAA Compliant',
+            'ICAO Aligned',
+            'Hash-Chained Audit',
+            'AES-256 Encrypted',
+          ].map((b) => (
+            <span key={b} style={styles.brandPill}>
+              <span style={styles.brandDot} />
+              {b}
+            </span>
+          ))}
+        </div>
+      </div>
+    </aside>
+  );
+
   if (submitted) {
     return (
       <div style={styles.page}>
-        <div style={styles.card}>
-          <div style={{ marginBottom: 28 }}>
-            <Logo size={32} subtitle="Aviation Platform" />
+        <style>{RESPONSIVE_CSS}</style>
+        {BrandPanel}
+        <div style={styles.formColumn}>
+          <div style={styles.formInner}>
+            <div style={styles.overline}>Almost there</div>
+            <h1 style={styles.h1}>Check your inbox</h1>
+            <p style={styles.sub}>
+              We sent a confirmation link to <strong style={{ color: 'var(--text-primary)' }}>{submitted.email}</strong>.
+              Click the link to activate your account — it'll bring you back here signed in.
+            </p>
+            <div style={{ ...styles.error, background: 'rgba(58, 138, 110, 0.08)', borderLeft: '3px solid var(--color-sage-500)', color: 'var(--color-sage-500)', borderColor: 'rgba(58, 138, 110, 0.30)', marginTop: 22 }}>
+              Email not arriving? Check your spam folder. The link expires in 24 hours.
+            </div>
+            <p style={styles.footer}>
+              Already confirmed? <Link to="/login" style={styles.link}>Sign in</Link>
+            </p>
           </div>
-          <div style={styles.overline}>Almost there</div>
-          <h1 style={styles.h1}>Check your inbox</h1>
-          <p style={styles.sub}>
-            We sent a confirmation link to <strong style={{ color: 'var(--text-primary)' }}>{submitted.email}</strong>.
-            Click the link to activate your account — it'll bring you back here signed in.
-          </p>
-          <div style={{ ...styles.error, background: 'rgba(58, 138, 110, 0.08)', borderLeft: '3px solid var(--color-sage-500)', color: 'var(--color-sage-500)', borderColor: 'rgba(58, 138, 110, 0.30)', marginTop: 22 }}>
-            Email not arriving? Check your spam folder. The link expires in 24 hours.
-          </div>
-          <p style={styles.footer}>
-            Already confirmed? <Link to="/login" style={styles.link}>Sign in</Link>
-          </p>
         </div>
       </div>
     );
@@ -168,15 +215,15 @@ export default function Register() {
 
   return (
     <div style={styles.page}>
-      <div style={styles.card}>
-        <div style={{ marginBottom: 24 }}>
-          <Logo size={32} subtitle="Aviation Platform" />
-        </div>
-        <div style={styles.overline}>Create account</div>
-        <h1 style={styles.h1}>Join Naluka</h1>
-        <p style={styles.sub}>SACAA-verified crews, suppliers and operators across Africa.</p>
+      <style>{RESPONSIVE_CSS}</style>
+      {BrandPanel}
+      <div style={styles.formColumn}>
+        <div style={styles.formInner}>
+          <div style={styles.overline}>Create account</div>
+          <h1 style={styles.h1}>Join Naluka</h1>
+          <p style={styles.sub}>SACAA-verified crews, suppliers and operators across Africa.</p>
 
-        <form onSubmit={handleRegister} style={{ marginTop: 22 }}>
+          <form onSubmit={handleRegister} style={{ marginTop: 22 }}>
           {/* Account type — radio cards */}
           <label style={styles.label}>I am a…</label>
           <div style={styles.accountTypeGrid}>
@@ -311,35 +358,99 @@ export default function Register() {
           <button type="submit" disabled={submitting} style={{ ...styles.btn, opacity: submitting ? 0.6 : 1 }}>
             {submitting ? 'Creating account…' : 'Create account'}
           </button>
-        </form>
+          </form>
 
-        <p style={styles.footer}>
-          Already have an account? <Link to="/login" style={styles.link}>Sign in</Link>
-        </p>
+          <p style={styles.footer}>
+            Already have an account? <Link to="/login" style={styles.link}>Sign in</Link>
+          </p>
+        </div>
       </div>
     </div>
   );
 }
 
 const styles = {
+  // ── Page-level grid ─────────────────────────────────────────────
+  // Two-column split on desktop (brand panel + form column), single
+  // column under 900px viewport (brand panel collapses out of flow).
   page: {
     flex: 1,
     minHeight: '100vh',
     display: 'flex',
+    background: 'var(--surface-base)',
+  },
+  brandPanel: {
+    flex: '1 1 0',
+    minWidth: 0,
+    background: 'radial-gradient(circle at 25% 30%, rgba(21,32,67,0.85) 0%, rgba(7,12,32,0.6) 60%), linear-gradient(135deg, rgba(184,74,26,0.10), transparent 60%)',
+    borderRight: '1px solid var(--border-subtle)',
+    display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
-    background: 'radial-gradient(circle at 70% 20%, rgba(21,32,67,0.6) 0%, var(--surface-base) 60%)',
+    padding: '40px 56px',
   },
-  card: {
+  brandInner: {
     width: '100%',
-    maxWidth: 480,
-    background: 'var(--surface-card)',
+    maxWidth: 460,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 32,
+  },
+  brandHero: { display: 'flex', flexDirection: 'column', gap: 16 },
+  brandOverline: {
+    fontSize: 11,
+    fontWeight: 600,
+    letterSpacing: '0.14em',
+    textTransform: 'uppercase',
+    color: 'var(--text-overline)',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+  },
+  brandOverlineRule: { width: 24, height: 2, background: 'var(--action-primary)', borderRadius: 1 },
+  brandH2: {
+    fontFamily: 'var(--font-display)',
+    fontWeight: 400,
+    fontSize: 'clamp(36px, 4vw, 56px)',
+    lineHeight: 0.98,
+    letterSpacing: '0.01em',
+    color: 'var(--text-primary)',
+    margin: 0,
+  },
+  brandH2Em: { color: 'var(--text-warning)', fontStyle: 'normal' },
+  brandLead: {
+    fontSize: 15,
+    color: 'var(--text-tertiary)',
+    lineHeight: 1.6,
+    margin: 0,
+  },
+  brandTrust: { display: 'flex', flexWrap: 'wrap', gap: 8 },
+  brandPill: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    background: 'rgba(255,255,255,0.04)',
     border: '1px solid var(--border-subtle)',
-    borderTop: '1px solid var(--border-default)',
-    borderRadius: 'var(--radius-xl)',
-    padding: '32px 32px 28px',
-    boxShadow: 'var(--shadow-lg)',
+    borderRadius: 'var(--radius-pill)',
+    padding: '5px 12px',
+    fontSize: 11,
+    color: 'var(--text-tertiary)',
+  },
+  brandDot: { width: 6, height: 6, borderRadius: '50%', background: 'var(--color-sage-500)' },
+
+  // ── Form column ────────────────────────────────────────────────
+  formColumn: {
+    flex: '1 1 0',
+    minWidth: 0,
+    overflowY: 'auto',
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    padding: '56px 32px',
+  },
+  formInner: {
+    width: '100%',
+    maxWidth: 460,
   },
   overline: {
     fontSize: 11,

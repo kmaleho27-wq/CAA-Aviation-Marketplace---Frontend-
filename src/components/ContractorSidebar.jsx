@@ -1,0 +1,209 @@
+import { NavLink, useNavigate } from 'react-router-dom';
+import Logo from './Logo';
+import { MOBILE_TABS } from '../data/mobile';
+import { getUser, logout } from '../lib/auth';
+
+// Sidebar for the contractor / aviation-professional shell. Mirrors
+// src/components/Sidebar.jsx (operator) and AdminSidebar so the three
+// shells feel consistent. Uses the same MOBILE_TABS data the old
+// bottom-tab-bar layout used — wallet / jobs / sign-off / profile.
+
+const ICONS = {
+  wallet: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="7" width="20" height="14" rx="2" />
+      <path d="M16 14a1 1 0 110-2 1 1 0 010 2z" fill="currentColor" />
+      <path d="M2 11h20M6 7V5a2 2 0 012-2h8a2 2 0 012 2v2" />
+    </svg>
+  ),
+  jobs: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+    </svg>
+  ),
+  signoff: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 6L9 17l-5-5" />
+    </svg>
+  ),
+  profile: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  ),
+  logout: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
+    </svg>
+  ),
+};
+
+export default function ContractorSidebar() {
+  const navigate = useNavigate();
+  const user = getUser() || { name: 'Aviation Professional', role: 'AME' };
+  const initials = (user.name || '?')
+    .split(' ')
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login', { replace: true });
+  };
+
+  const navItemStyle = ({ isActive }) => ({
+    ...styles.navItem,
+    ...(isActive ? styles.navItemActive : {}),
+  });
+
+  return (
+    <aside style={styles.sidebar}>
+      <div style={styles.logoWrap}>
+        <Logo size={28} subtitle="Aviation Platform" />
+      </div>
+
+      <nav style={styles.nav}>
+        <div style={styles.navSection}>CONTRACTOR</div>
+        {MOBILE_TABS.map((item) => (
+          <NavLink key={item.id} to={item.path} style={navItemStyle}>
+            {({ isActive }) => (
+              <>
+                <span style={{ opacity: isActive ? 1 : 0.6, display: 'flex' }}>{ICONS[item.id]}</span>
+                <span style={{ flex: 1 }}>{item.label}</span>
+                {item.badge && !isActive && <span style={styles.navBadge}>{item.badge}</span>}
+              </>
+            )}
+          </NavLink>
+        ))}
+      </nav>
+
+      <div style={styles.userWrap}>
+        <div style={styles.avatar}>{initials}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={styles.userName}>{user.name}</div>
+          <div style={styles.userRole}>Aviation Professional</div>
+        </div>
+        <button onClick={handleLogout} style={styles.logoutBtn} aria-label="Sign out" title="Sign out">
+          {ICONS.logout}
+        </button>
+      </div>
+    </aside>
+  );
+}
+
+const styles = {
+  sidebar: {
+    width: 'var(--sidebar-width)',
+    flexShrink: 0,
+    background: 'var(--surface-sidebar)',
+    borderRight: '1px solid var(--border-subtle)',
+    display: 'flex',
+    flexDirection: 'column',
+    height: '100vh',
+    position: 'sticky',
+    top: 0,
+  },
+  logoWrap: {
+    display: 'flex',
+    alignItems: 'center',
+    padding: '20px 16px 16px',
+    borderBottom: '1px solid var(--border-subtle)',
+  },
+  nav: {
+    flex: 1,
+    padding: '12px 8px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 1,
+    overflowY: 'auto',
+  },
+  navSection: {
+    fontSize: 10,
+    fontWeight: 600,
+    letterSpacing: '0.1em',
+    color: 'var(--text-overline)',
+    padding: '6px 8px 4px',
+    textTransform: 'uppercase',
+  },
+  navItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 9,
+    padding: '8px 10px',
+    borderRadius: 'var(--radius-md)',
+    background: 'transparent',
+    color: 'var(--text-secondary)',
+    fontSize: 13,
+    fontWeight: 500,
+    textAlign: 'left',
+    width: '100%',
+    textDecoration: 'none',
+    transition: 'background var(--transition-fast), color var(--transition-fast)',
+    border: 'none',
+    cursor: 'pointer',
+  },
+  navItemActive: {
+    background: 'rgba(212, 169, 52, 0.10)',
+    color: 'var(--text-accent)',
+  },
+  navBadge: {
+    background: 'rgba(196, 66, 30, 0.20)',
+    color: 'var(--text-aog)',
+    borderRadius: 'var(--radius-pill)',
+    padding: '1px 6px',
+    fontSize: 10,
+    fontWeight: 700,
+  },
+  userWrap: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 9,
+    padding: '12px 16px',
+    borderTop: '1px solid var(--border-subtle)',
+  },
+  avatar: {
+    width: 30,
+    height: 30,
+    borderRadius: '50%',
+    background: 'var(--surface-input)',
+    border: '1.5px solid var(--border-default)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: 11,
+    fontWeight: 700,
+    color: 'var(--text-secondary)',
+    flexShrink: 0,
+  },
+  userName: {
+    fontSize: 13,
+    fontWeight: 600,
+    color: 'var(--text-primary)',
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  },
+  userRole: {
+    fontSize: 11,
+    color: 'var(--text-tertiary)',
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  },
+  logoutBtn: {
+    background: 'transparent',
+    border: 'none',
+    padding: 6,
+    color: 'var(--text-tertiary)',
+    cursor: 'pointer',
+    borderRadius: 'var(--radius-sm)',
+    display: 'flex',
+  },
+};
