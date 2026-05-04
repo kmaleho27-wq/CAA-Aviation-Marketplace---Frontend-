@@ -72,11 +72,27 @@ const operatorId = authData.session.user.id;
 // ── 4. personnel.js — listPersonnel via personnel_public ──
 {
   const { data, error } = await sb.from('personnel_public').select('*');
-  test(!error && data?.length === 6, `personnel_public: 6 rows`, error?.message || `got ${data?.length}`);
+  // Migration 0006 added 7 new seed rows (cabin crew, DAME, RPAS, FE,
+  // firefighter, marshaller, NPL) on top of the original 6. Live DB
+  // may grow further as users self-register — assert >= 13.
+  test(!error && (data?.length ?? 0) >= 13,
+    `personnel_public: at least 13 rows after 0006 migration`,
+    error?.message || `got ${data?.length}`);
   // PII masking — license/rate/expires must NOT be present
   const cols = data?.[0] ? Object.keys(data[0]) : [];
   const leaks = cols.filter((c) => ['license', 'rate', 'expires'].includes(c));
   test(leaks.length === 0, `personnel_public: PII masked`, leaks.length ? `leaked ${leaks.join(',')}` : '');
+  // Migration 0006 columns must be exposed on the public view
+  const expected = ['discipline', 'sacaa_part', 'licence_subtype', 'aircraft_category', 'medical_class', 'endorsements'];
+  const missing = expected.filter((c) => !cols.includes(c));
+  test(missing.length === 0, `personnel_public: 0006 taxonomy columns exposed`,
+    missing.length ? `missing ${missing.join(',')}` : '');
+  // Discipline coverage — at least one row from each broad bucket we seeded
+  const disciplines = new Set((data ?? []).map((p) => p.discipline));
+  const expectedDisciplines = ['flight_crew', 'cabin_crew', 'atc', 'ame', 'aviation_medical', 'rpas_pilot', 'flight_engineer', 'national_pilot', 'non_licensed'];
+  const missingDisc = expectedDisciplines.filter((d) => !disciplines.has(d));
+  test(missingDisc.length === 0, `personnel: all 9 seeded disciplines present`,
+    missingDisc.length ? `missing ${missingDisc.join(',')}` : '');
 }
 
 // ── 5. documents.js — listDocuments ───────────────────────
