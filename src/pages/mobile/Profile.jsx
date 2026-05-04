@@ -1,7 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApi } from '../../lib/useApi';
 import { getWallet } from '../../api/contractor';
+import {
+  uploadPersonnelDoc,
+  listMyPersonnelDocs,
+  getPersonnelDocUrl,
+} from '../../api/documents';
+import { supabase } from '../../lib/supabase';
+import { getDocRequirements } from '../../data/document-requirements';
 import { PROFILE_STATS, SETTINGS_ROWS } from '../../data/mobile';
 import { useToast } from '../../lib/toast';
 import { logout, getUser } from '../../lib/auth';
@@ -16,6 +23,208 @@ function initialsOf(name) {
   if (!name) return '—';
   return name.split(/\s+/).map((p) => p[0]).join('').slice(0, 2).toUpperCase();
 }
+
+// ── Compliance Documents (P1 #5) ─────────────────────────────────
+// Lets a self-registered aviation pro upload the docs admin needs to
+// verify them. Requirements come from src/data/document-requirements.js
+// keyed on personnel.discipline.
+function ComplianceDocs() {
+  const [personnel, setPersonnel] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [docs, setDocs] = useState([]);
+  const [busyLabel, setBusyLabel] = useState(null);
+  const toast = useToast();
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: auth } = await supabase.auth.getUser();
+        if (!auth?.user) return;
+        const { data: ppl } = await supabase
+          .from('personnel')
+          .select('id, discipline, status')
+          .eq('user_id', auth.user.id)
+          .maybeSingle();
+        if (cancelled) return;
+        setPersonnel(ppl);
+        if (ppl?.id) {
+          const list = await listMyPersonnelDocs();
+          if (!cancelled) setDocs(list);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  if (loading) return null;
+  // Operators / suppliers / admins don't have a personnel row — section
+  // collapses entirely for them rather than showing an empty checklist.
+  if (!personnel) return null;
+
+  const requirements = getDocRequirements(personnel.discipline);
+  if (requirements.length === 0) return null;
+
+  // Match an uploaded doc against a requirement by `name === label` —
+  // we set name to the requirement label when uploading.
+  const docByLabel = Object.fromEntries(docs.map((d) => [d.name, d]));
+
+  const onPick = async (req) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/pdf,image/png,image/jpeg,image/heic,image/webp';
+    input.onchange = async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      setBusyLabel(req.label);
+      try {
+        const row = await uploadPersonnelDoc({
+          file,
+          type: req.type,
+          label: req.label,
+          personnelId: personnel.id,
+        });
+        setDocs((prev) => [row, ...prev.filter((d) => d.name !== req.label)]);
+        toast.success(`Uploaded — ${req.label}`);
+      } catch (err) {
+        toast.error(err.message || 'Upload failed.');
+      } finally {
+        setBusyLabel(null);
+      }
+    };
+    input.click();
+  };
+
+  const onView = async (id) => {
+    try {
+      const result = await getPersonnelDocUrl(id, { expiresIn: 60 });
+      if (result?.url) window.open(result.url, '_blank', 'noopener');
+    } catch (err) {
+      toast.error('Could not open file.');
+    }
+  };
+
+  return (
+    <div style={complianceStyles.wrap}>
+      <div style={complianceStyles.header}>
+        <div style={complianceStyles.title}>Compliance documents</div>
+        <span style={{
+          ...complianceStyles.statusPill,
+          ...(personnel.status === 'pending'  ? complianceStyles.statusPending  : {}),
+          ...(personnel.status === 'verified' ? complianceStyles.statusVerified : {}),
+          ...(personnel.status === 'expired'  ? complianceStyles.statusExpired  : {}),
+        }}>
+          {personnel.status === 'verified' ? '✓ Verified'
+            : personnel.status === 'pending' ? 'Awaiting review'
+            : personnel.status === 'expired' ? 'Action needed'
+            : personnel.status}
+        </span>
+      </div>
+      <div style={complianceStyles.sub}>
+        Upload these so the SACAA verification team can approve your account.
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 10 }}>
+        {requirements.map((req) => {
+          const uploaded = docByLabel[req.label];
+          const isBusy = busyLabel === req.label;
+          return (
+            <div key={req.label} style={complianceStyles.row}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={complianceStyles.rowLabel}>{req.label}</div>
+                <div style={complianceStyles.rowHint}>{req.hint}</div>
+              </div>
+              {uploaded ? (
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button onClick={() => onView(uploaded.id)} style={complianceStyles.viewBtn}>View</button>
+                  <button
+                    onClick={() => onPick(req)}
+                    style={complianceStyles.replaceBtn}
+                    disabled={isBusy}
+                  >
+                    {isBusy ? '…' : 'Replace'}
+                  </button>
+                </div>
+              ) : (
+                <button onClick={() => onPick(req)} disabled={isBusy} style={complianceStyles.uploadBtn}>
+                  {isBusy ? 'Uploading…' : 'Upload'}
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+const complianceStyles = {
+  wrap: {
+    background: '#1B2C5E',
+    border: '1px solid var(--border-subtle)',
+    borderRadius: 12,
+    padding: '14px 16px',
+    marginBottom: 12,
+  },
+  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 },
+  title: { fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' },
+  sub: { fontSize: 11, color: 'var(--text-tertiary)', marginTop: 2, lineHeight: 1.4 },
+  statusPill: {
+    fontSize: 10,
+    fontWeight: 700,
+    padding: '2px 8px',
+    borderRadius: 'var(--radius-pill)',
+    border: '1px solid transparent',
+    whiteSpace: 'nowrap',
+  },
+  statusPending:  { background: 'rgba(212, 169, 52, 0.10)', color: 'var(--text-warning)',     borderColor: 'rgba(212, 169, 52, 0.25)' },
+  statusVerified: { background: 'rgba(58, 138, 110, 0.15)', color: 'var(--color-sage-500)',   borderColor: 'rgba(58, 138, 110, 0.30)' },
+  statusExpired:  { background: 'rgba(212, 86, 86, 0.10)',  color: 'var(--text-danger)',      borderColor: 'rgba(212, 86, 86, 0.25)' },
+  row: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    padding: '8px 10px',
+    background: 'rgba(255,255,255,0.03)',
+    border: '1px solid var(--border-subtle)',
+    borderRadius: 8,
+  },
+  rowLabel: { fontSize: 12, fontWeight: 500, color: 'var(--text-primary)' },
+  rowHint: { fontSize: 10, color: 'var(--text-tertiary)', marginTop: 1, lineHeight: 1.35 },
+  uploadBtn: {
+    background: 'var(--action-primary)',
+    color: 'var(--action-primary-text)',
+    border: 'none',
+    borderRadius: 'var(--radius-md)',
+    padding: '6px 12px',
+    fontSize: 11,
+    fontWeight: 700,
+    cursor: 'pointer',
+    flexShrink: 0,
+  },
+  viewBtn: {
+    background: 'transparent',
+    color: 'var(--text-warning)',
+    border: '1px solid rgba(212, 169, 52, 0.30)',
+    borderRadius: 'var(--radius-md)',
+    padding: '5px 10px',
+    fontSize: 11,
+    cursor: 'pointer',
+    flexShrink: 0,
+  },
+  replaceBtn: {
+    background: 'transparent',
+    color: 'var(--text-tertiary)',
+    border: '1px solid var(--border-default)',
+    borderRadius: 'var(--radius-md)',
+    padding: '5px 10px',
+    fontSize: 11,
+    cursor: 'pointer',
+    flexShrink: 0,
+  },
+};
 
 export default function Profile() {
   const [available, setAvailable] = useState(true);
@@ -84,6 +293,8 @@ export default function Profile() {
           </div>
         ))}
       </div>
+
+      <ComplianceDocs />
 
       {SETTINGS_ROWS.map((r) => (
         <button key={r.label} style={styles.settingRow} type="button">

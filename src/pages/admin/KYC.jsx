@@ -4,6 +4,7 @@ import {
   listKyc, approveKyc, rejectKyc,
   listPendingPersonnel, approvePersonnel, rejectPersonnel,
 } from '../../api/admin';
+import { listPersonnelDocs, getPersonnelDocUrl } from '../../api/documents';
 import Badge from '../../components/admin/Badge';
 import { useToast } from '../../lib/toast';
 import { LoadingBlock, ErrorBlock } from '../../components/ApiState';
@@ -40,6 +41,22 @@ function prettyNonLicensed(v) {
 
 function PendingPersonnelCard({ p, onApprove, onReject, busy }) {
   const info = DISCIPLINE_INFO[p.discipline] || { label: p.discipline, part: p.sacaaPart };
+  const [uploadedDocs, setUploadedDocs] = useState([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    listPersonnelDocs(p.id)
+      .then((rows) => { if (!cancelled) setUploadedDocs(rows); })
+      .catch(() => { /* silent — empty state covers it */ });
+    return () => { cancelled = true; };
+  }, [p.id]);
+
+  const openDoc = async (id) => {
+    try {
+      const result = await getPersonnelDocUrl(id, { expiresIn: 60 });
+      if (result?.url) window.open(result.url, '_blank', 'noopener');
+    } catch { /* toasts handled in caller's catch */ }
+  };
 
   return (
     <div style={styles.card}>
@@ -101,6 +118,23 @@ function PendingPersonnelCard({ p, onApprove, onReject, busy }) {
                 <span key={e} style={styles.docChip}>✓ {e}</span>
               ))}
             </div>
+          )}
+
+          {uploadedDocs.length > 0 ? (
+            <div style={{ ...styles.docsRow, marginTop: 8 }}>
+              {uploadedDocs.map((d) => (
+                <button
+                  key={d.id}
+                  onClick={() => openDoc(d.id)}
+                  style={styles.docLink}
+                  title={`Open ${d.name} in new tab`}
+                >
+                  📎 {d.name}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div style={styles.noDocs}>No supporting documents uploaded yet.</div>
           )}
         </div>
 
@@ -447,5 +481,22 @@ const styles = {
     fontSize: 12,
     lineHeight: 1.6,
     color: 'var(--text-secondary)',
+  },
+  docLink: {
+    background: 'rgba(212, 169, 52, 0.08)',
+    border: '1px solid rgba(212, 169, 52, 0.25)',
+    color: 'var(--text-warning)',
+    borderRadius: 'var(--radius-pill)',
+    padding: '3px 10px',
+    fontSize: 11,
+    fontWeight: 500,
+    cursor: 'pointer',
+    transition: 'background var(--transition-fast)',
+  },
+  noDocs: {
+    fontSize: 11,
+    color: 'var(--text-overline)',
+    fontStyle: 'italic',
+    marginTop: 8,
   },
 };
