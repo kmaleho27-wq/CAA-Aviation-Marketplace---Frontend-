@@ -335,6 +335,65 @@ export type Database = {
           },
         ]
       }
+      mro_service: {
+        Row: {
+          active: boolean
+          aircraft_types: string[]
+          category: Database["public"]["Enums"]["mro_service_category"]
+          created_at: string
+          description: string | null
+          id: string
+          lead_time_days: number | null
+          location: string
+          mro_id: string
+          name: string
+          price_from: string | null
+          rating: number | null
+          status: Database["public"]["Enums"]["personnel_status"]
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          aircraft_types?: string[]
+          category: Database["public"]["Enums"]["mro_service_category"]
+          created_at?: string
+          description?: string | null
+          id?: string
+          lead_time_days?: number | null
+          location: string
+          mro_id: string
+          name: string
+          price_from?: string | null
+          rating?: number | null
+          status?: Database["public"]["Enums"]["personnel_status"]
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          aircraft_types?: string[]
+          category?: Database["public"]["Enums"]["mro_service_category"]
+          created_at?: string
+          description?: string | null
+          id?: string
+          lead_time_days?: number | null
+          location?: string
+          mro_id?: string
+          name?: string
+          price_from?: string | null
+          rating?: number | null
+          status?: Database["public"]["Enums"]["personnel_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mro_service_mro_id_fkey"
+            columns: ["mro_id"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification: {
         Row: {
           body: string
@@ -924,6 +983,17 @@ export type Database = {
         | "class_3"
         | "class_4"
         | "none"
+      mro_service_category:
+        | "a_check"
+        | "b_check"
+        | "c_check"
+        | "d_check"
+        | "engine_overhaul"
+        | "avionics"
+        | "paint_interior"
+        | "aog_response"
+        | "component"
+        | "other"
       notification_type: "aog" | "warning" | "success"
       part_condition: "New" | "Overhauled" | "Serviceable"
       part_status: "verified" | "expiring" | "expired"

@@ -78,8 +78,9 @@ export const NOTIFICATIONS = [
 
 export const NAV_ITEMS = [
   { id: 'dashboard',    path: '/app/dashboard',    label: 'Dashboard',         icon: 'grid'        },
-  { id: 'marketplace',  path: '/app/marketplace',  label: 'Marketplace',       icon: 'package',    badge: 3 },
-  { id: 'personnel',    path: '/app/personnel',    label: 'Personnel',         icon: 'users'       },
+  { id: 'marketplace',  path: '/app/marketplace',  label: 'Parts',             icon: 'package',    badge: 3 },
+  { id: 'personnel',    path: '/app/personnel',    label: 'Crew',              icon: 'users'       },
+  { id: 'mro',          path: '/app/mro',          label: 'MRO Services',      icon: 'wrench'      },
   { id: 'vault',        path: '/app/vault',        label: 'Compliance Vault',  icon: 'shield'      },
   { id: 'transactions', path: '/app/transactions', label: 'Transactions',      icon: 'credit-card' },
 ];

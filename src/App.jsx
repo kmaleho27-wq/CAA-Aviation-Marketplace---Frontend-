@@ -19,6 +19,7 @@ const AdminShell      = lazy(() => import('./layouts/AdminShell'));
 const Dashboard       = lazy(() => import('./pages/Dashboard'));
 const Marketplace     = lazy(() => import('./pages/Marketplace'));
 const Personnel       = lazy(() => import('./pages/Personnel'));
+const Mro             = lazy(() => import('./pages/Mro'));
 const Vault           = lazy(() => import('./pages/Vault'));
 const Transactions    = lazy(() => import('./pages/Transactions'));
 const Settings        = lazy(() => import('./pages/Settings'));
@@ -70,6 +71,7 @@ export default function App() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="marketplace" element={<Marketplace />} />
           <Route path="personnel" element={<Personnel />} />
+          <Route path="mro" element={<Mro />} />
           <Route path="vault" element={<Vault />} />
           <Route path="transactions" element={<Transactions />} />
           <Route path="settings" element={<Settings />} />
