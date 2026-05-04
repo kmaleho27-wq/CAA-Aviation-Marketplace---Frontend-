@@ -72,11 +72,13 @@ const operatorId = authData.session.user.id;
 // ── 4. personnel.js — listPersonnel via personnel_public ──
 {
   const { data, error } = await sb.from('personnel_public').select('*');
-  // Migration 0006 added 7 new seed rows (cabin crew, DAME, RPAS, FE,
-  // firefighter, marshaller, NPL) on top of the original 6. Live DB
-  // may grow further as users self-register — assert >= 13.
-  test(!error && (data?.length ?? 0) >= 13,
-    `personnel_public: at least 13 rows after 0006 migration`,
+  // Migration 0006 added 7 new seed rows on top of the original 6 (=13
+  // total). Migration 0012 then changed personnel_public to filter
+  // out rows where status='expired' (Khumalo's seed row qualifies),
+  // so the view returns >= 12. Live DB may grow further via self
+  // signups + operator-creates-personnel.
+  test(!error && (data?.length ?? 0) >= 12,
+    `personnel_public: at least 12 rows (post-0012 expired filter)`,
     error?.message || `got ${data?.length}`);
   // PII masking — license/rate/expires must NOT be present
   const cols = data?.[0] ? Object.keys(data[0]) : [];
