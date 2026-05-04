@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { supabase, userFromSession, decodeJwtClaims } from './supabase';
+import { setSentryUser } from './sentry';
 
 // ────────────────────────────────────────────────────────────────────
 // Auth helpers — preserved signatures so consumers don't change.
@@ -37,12 +38,16 @@ function bootstrap() {
 function mirrorToLocalStorage(session) {
   const user = userFromSession(session);
   if (session.access_token) localStorage.setItem('token', session.access_token);
-  if (user) localStorage.setItem('user', JSON.stringify(user));
+  if (user) {
+    localStorage.setItem('user', JSON.stringify(user));
+    setSentryUser(user);  // Tag Sentry scope so errors are attributable.
+  }
 }
 
 function clearLocalStorage() {
   localStorage.removeItem('token');
   localStorage.removeItem('user');
+  setSentryUser(null);    // Clear Sentry user on logout.
 }
 
 // Run once at module import. Safe in mock mode — Supabase listener fires
