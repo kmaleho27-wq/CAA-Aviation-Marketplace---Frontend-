@@ -80,6 +80,36 @@ export async function rejectKyc(id) {
   return snakeToCamel(data);
 }
 
+// ── Pending personnel verification (P1 #4) ───────────────────────────
+// Self-signups from /register land at personnel.status='pending' (see
+// migration 0007). Admins approve/reject via these RPCs (migration
+// 0008). The list query joins through profile to surface the user's
+// email — useful when the admin needs to nudge the applicant.
+export async function listPendingPersonnel() {
+  const { data, error } = await supabase
+    .from('personnel')
+    .select('*, profile:user_id(email, name)')
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return snakeToCamel(data);
+}
+
+export async function approvePersonnel(id) {
+  const { data, error } = await supabase.rpc('approve_personnel', { p_id: id });
+  if (error) throw error;
+  return snakeToCamel(data);
+}
+
+export async function rejectPersonnel(id, reason) {
+  const { data, error } = await supabase.rpc('reject_personnel', {
+    p_id: id,
+    p_reason: reason || null,
+  });
+  if (error) throw error;
+  return snakeToCamel(data);
+}
+
 // ── Disputes ─────────────────────────────────────────────────────────
 export async function listDisputes() {
   const { data, error } = await supabase

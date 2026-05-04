@@ -169,6 +169,15 @@ if (adminErr) process.exit(1);
   test(inEscrow >= 0, `admin: in-escrow count is reportable`, `got ${inEscrow}`);
 }
 
+// Admin can read the personnel verification queue (P1 #4)
+{
+  const { data, error } = await sb.from('personnel').select('id, status').eq('status', 'pending');
+  test(!error, `admin: pending personnel query succeeds`, error?.message);
+  test((data?.length ?? 0) >= 0,
+    `admin: pending personnel queue reachable`,
+    `got ${data?.length ?? 0} rows`);
+}
+
 // Admin sees KYC + disputes
 {
   const [kyc, disp] = await Promise.all([
