@@ -47,6 +47,13 @@ create unique index if not exists transaction_idempotency_key_uniq
 -- MRO transactions don't yet have a dedicated FK column — when the
 -- MRO escrow flow ships (P1 #6 in revised roadmap), we'll add an
 -- mro_quote_id column and update this constraint.
+--
+-- IMPORTANT: NOT VALID is intentional and final. The seeded transaction
+-- rows in seed-supabase.mjs (and any test rows created before this
+-- migration) don't always populate part_id / personnel_id, so we
+-- can't validate the constraint against legacy data. The constraint
+-- still enforces for every NEW insert and UPDATE going forward, which
+-- is what we actually need.
 alter table public.transaction drop constraint if exists transaction_type_fk_consistent;
 alter table public.transaction
   add constraint transaction_type_fk_consistent check (
@@ -56,13 +63,7 @@ alter table public.transaction
     or
     (type = 'MRO')   -- MRO consistency added when escrow flow ships
   )
-  not valid;       -- not valid: skip historical rows; only enforce on new inserts
-
--- Validate going forward but don't block migration if old rows fail
--- (they shouldn't — seed data conforms — but `not valid` is a safety
--- net for any drift we missed).
-alter table public.transaction
-  validate constraint transaction_type_fk_consistent;
+  not valid;
 
 -- ── claim_idempotency_key RPC ────────────────────────────────────
 -- Edge Function calls this to atomically check-and-insert a key
