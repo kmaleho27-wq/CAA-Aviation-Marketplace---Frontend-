@@ -643,6 +643,7 @@ export type Database = {
           buyer_id: string | null
           created_at: string
           id: string
+          idempotency_key: string
           item: string
           part_id: string | null
           party: string
@@ -663,6 +664,7 @@ export type Database = {
           buyer_id?: string | null
           created_at?: string
           id: string
+          idempotency_key?: string
           item: string
           part_id?: string | null
           party: string
@@ -683,6 +685,7 @@ export type Database = {
           buyer_id?: string | null
           created_at?: string
           id?: string
+          idempotency_key?: string
           item?: string
           part_id?: string | null
           party?: string

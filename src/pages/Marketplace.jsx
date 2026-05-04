@@ -7,9 +7,13 @@ import ProcurementWizard from '../components/ProcurementWizard';
 
 const CATEGORIES = ['All', 'AOG Priority', 'Rotables', 'Consumables', 'Avionics', 'Engines', 'Landing Gear'];
 
+// /autoplan P0 #2: replace "Verified" with "Cert on file" until live
+// 8130/EASA-Form-1 chain-of-custody verification ships. The visible
+// `part.cert` text next to the badge tells the buyer which cert
+// document is on file (FAA 8130-3, EASA Form 1, SACAA Form 18, etc.).
 const STATUS_TONES = {
-  verified: { bg: 'var(--status-verified-bg)', color: 'var(--status-verified-text)', border: 'var(--status-verified-border)', label: '✓ Verified' },
-  expiring: { bg: 'var(--status-expiring-bg)', color: 'var(--status-expiring-text)', border: 'var(--status-expiring-border)', label: 'Cert Expiring' },
+  verified: { bg: 'var(--status-verified-bg)', color: 'var(--status-verified-text)', border: 'var(--status-verified-border)', label: '📄 Cert on file' },
+  expiring: { bg: 'var(--status-expiring-bg)', color: 'var(--status-expiring-text)', border: 'var(--status-expiring-border)', label: 'Cert expiring' },
 };
 
 const CONDITION_COLOR = {

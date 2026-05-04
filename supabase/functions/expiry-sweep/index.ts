@@ -7,6 +7,10 @@
 //
 // Documents with no expires date are skipped.
 //
+// On every run, we call record_cron_run(...) so cron_health shows
+// liveness — see migration 0013. A 30-day silent failure used to be
+// possible; now it isn't.
+//
 // Auth: pg_cron passes CRON_SECRET via x-cron-secret header.
 // config.toml: verify_jwt = false.
 
@@ -22,32 +26,50 @@ Deno.serve(async (req) => {
   const expiringThreshold = new Date(now + 30 * 24 * 60 * 60 * 1000).toISOString();
   const expiredThreshold = new Date(now).toISOString();
 
-  // Two batched updates — set-based, no row-by-row loop needed.
-  const [toExpiring, toExpired] = await Promise.all([
-    sb.from('document')
-      .update({ status: 'expiring' })
-      .eq('status', 'verified')
-      .not('expires', 'is', null)
-      .lte('expires', expiringThreshold)
-      .gt('expires', expiredThreshold)
-      .select('id'),
-    sb.from('document')
-      .update({ status: 'expired' })
-      .eq('status', 'expiring')
-      .not('expires', 'is', null)
-      .lte('expires', expiredThreshold)
-      .select('id'),
-  ]);
+  let toExpiringCount = 0;
+  let toExpiredCount = 0;
+  let errMessage: string | null = null;
 
-  if (toExpiring.error) return errResp(toExpiring.error);
-  if (toExpired.error)  return errResp(toExpired.error);
+  try {
+    const [toExpiring, toExpired] = await Promise.all([
+      sb.from('document')
+        .update({ status: 'expiring' })
+        .eq('status', 'verified')
+        .not('expires', 'is', null)
+        .lte('expires', expiringThreshold)
+        .gt('expires', expiredThreshold)
+        .select('id'),
+      sb.from('document')
+        .update({ status: 'expired' })
+        .eq('status', 'expiring')
+        .not('expires', 'is', null)
+        .lte('expires', expiredThreshold)
+        .select('id'),
+    ]);
+
+    if (toExpiring.error) throw toExpiring.error;
+    if (toExpired.error) throw toExpired.error;
+
+    toExpiringCount = toExpiring.data?.length ?? 0;
+    toExpiredCount = toExpired.data?.length ?? 0;
+  } catch (e) {
+    errMessage = (e as Error).message ?? 'unknown error';
+  }
+
+  // ── Heartbeat: record the outcome regardless of success/failure ─
+  await sb.rpc('record_cron_run', {
+    p_job: 'expiry-sweep',
+    p_ok: errMessage === null,
+    p_rows_affected: toExpiringCount + toExpiredCount,
+    p_error_msg: errMessage,
+  });
+
+  if (errMessage) {
+    return new Response(`DB error: ${errMessage}`, { status: 500 });
+  }
 
   return new Response(JSON.stringify({
-    flipped_to_expiring: toExpiring.data?.length ?? 0,
-    flipped_to_expired:  toExpired.data?.length ?? 0,
+    flipped_to_expiring: toExpiringCount,
+    flipped_to_expired:  toExpiredCount,
   }), { headers: { 'Content-Type': 'application/json' } });
 });
-
-function errResp(e: { message?: string }): Response {
-  return new Response(`DB error: ${e.message ?? 'unknown'}`, { status: 500 });
-}

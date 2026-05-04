@@ -24,35 +24,55 @@ Deno.serve(async (req) => {
   const sb = adminClient();
   const horizon = new Date(Date.now() + SIXTY_DAYS_MS).toISOString();
 
-  // Pull personnel due for re-verification.
-  const { data: rows, error: queryErr } = await sb
-    .from('personnel')
-    .select('id, license, status, expires')
-    .in('status', ['verified', 'expiring'])
-    .not('expires', 'is', null)
-    .lte('expires', horizon);
-  if (queryErr) return new Response(`DB error: ${queryErr.message}`, { status: 500 });
-
+  let scanned = 0;
   let touched = 0;
-  for (const r of rows ?? []) {
-    const fresh = await reverify(r.license);
-    let nextStatus: 'verified' | 'expiring' | 'expired' | null = null;
+  let errMessage: string | null = null;
 
-    if (!fresh.valid) {
-      nextStatus = 'expired';
-    } else if (r.expires && new Date(r.expires).getTime() < Date.now() + 30 * 24 * 60 * 60 * 1000) {
-      nextStatus = 'expiring';
-    } else {
-      nextStatus = 'verified';
-    }
+  try {
+    const { data: rows, error: queryErr } = await sb
+      .from('personnel')
+      .select('id, license, status, expires')
+      .in('status', ['verified', 'expiring'])
+      .not('expires', 'is', null)
+      .lte('expires', horizon);
+    if (queryErr) throw queryErr;
 
-    if (nextStatus && nextStatus !== r.status) {
-      await sb.from('personnel').update({ status: nextStatus }).eq('id', r.id);
-      touched++;
+    scanned = rows?.length ?? 0;
+
+    for (const r of rows ?? []) {
+      const fresh = await reverify(r.license);
+      let nextStatus: 'verified' | 'expiring' | 'expired' | null = null;
+
+      if (!fresh.valid) {
+        nextStatus = 'expired';
+      } else if (r.expires && new Date(r.expires).getTime() < Date.now() + 30 * 24 * 60 * 60 * 1000) {
+        nextStatus = 'expiring';
+      } else {
+        nextStatus = 'verified';
+      }
+
+      if (nextStatus && nextStatus !== r.status) {
+        await sb.from('personnel').update({ status: nextStatus }).eq('id', r.id);
+        touched++;
+      }
     }
+  } catch (e) {
+    errMessage = (e as Error).message ?? 'unknown error';
   }
 
-  return new Response(JSON.stringify({ scanned: rows?.length ?? 0, touched }), {
+  // ── Heartbeat (migration 0013) ────────────────────────────────────
+  await sb.rpc('record_cron_run', {
+    p_job: 'sacaa-sweep',
+    p_ok: errMessage === null,
+    p_rows_affected: touched,
+    p_error_msg: errMessage,
+  });
+
+  if (errMessage) {
+    return new Response(`DB error: ${errMessage}`, { status: 500 });
+  }
+
+  return new Response(JSON.stringify({ scanned, touched }), {
     headers: { 'Content-Type': 'application/json' },
   });
 });

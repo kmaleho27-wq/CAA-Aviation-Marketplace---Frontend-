@@ -36,10 +36,11 @@ Deno.serve(async (req) => {
 
   const body = await req.json().catch(() => null);
   if (!body) return error('Invalid JSON body');
-  const { kind, partId, personnelId } = body as {
+  const { kind, partId, personnelId, idempotencyKey } = body as {
     kind?: 'parts' | 'personnel';
     partId?: string;
     personnelId?: string;
+    idempotencyKey?: string;          // optional UUID — caller may supply for retry-safety
   };
 
   if (kind !== 'parts' && kind !== 'personnel') {
@@ -47,6 +48,28 @@ Deno.serve(async (req) => {
   }
 
   const sb = adminClient();
+
+  // ── Idempotency ─────────────────────────────────────────────────
+  // If the caller provided an idempotencyKey AND a transaction with
+  // that key already exists, return the same transaction id (don't
+  // create a duplicate row). This prevents double-clicks and
+  // retry-on-network-flake from billing twice.
+  // If no key was provided, generate one — the response carries it
+  // back so callers can persist + reuse on retry.
+  const ikey = idempotencyKey ?? crypto.randomUUID();
+  const { data: existing } = await sb
+    .from('transaction')
+    .select('id, status')
+    .eq('idempotency_key', ikey)
+    .maybeSingle();
+  if (existing?.id) {
+    return json({
+      transactionId: existing.id,
+      idempotencyKey: ikey,
+      reused: true,
+      message: 'Transaction with this idempotency key already exists.',
+    });
+  }
 
   // Lookup item
   let item: string;
@@ -77,6 +100,7 @@ Deno.serve(async (req) => {
   const txnId = makeTxnId();
   const { error: txnErr } = await sb.from('transaction').insert({
     id: txnId,
+    idempotency_key: ikey,
     type: kind === 'parts' ? 'Parts' : 'Personnel',
     item, party, amount,
     status: 'in-escrow',
@@ -86,7 +110,27 @@ Deno.serve(async (req) => {
     buyer_id: user.userId,
     application_fee_cents: feeCents,
   });
-  if (txnErr) return error(`Failed to create transaction: ${txnErr.message}`, 500);
+  if (txnErr) {
+    // If the unique constraint on idempotency_key tripped (race between
+    // the maybeSingle() check and the insert), fetch + return the row
+    // that won the race instead of failing the caller.
+    if (txnErr.message?.includes('idempotency_key')) {
+      const { data: raced } = await sb
+        .from('transaction')
+        .select('id')
+        .eq('idempotency_key', ikey)
+        .maybeSingle();
+      if (raced?.id) {
+        return json({
+          transactionId: raced.id,
+          idempotencyKey: ikey,
+          reused: true,
+          message: 'Race won — returning existing transaction.',
+        });
+      }
+    }
+    return error(`Failed to create transaction: ${txnErr.message}`, 500);
+  }
 
   const cfg = payfastConfig();
 
@@ -96,6 +140,7 @@ Deno.serve(async (req) => {
     await sb.from('transaction').update({ stripe_intent_id: mockPfId }).eq('id', txnId);
     return json({
       transactionId: txnId,
+      idempotencyKey: ikey,
       pfPaymentId: mockPfId,
       checkoutUrl: null,
       enabled: false,
@@ -130,6 +175,7 @@ Deno.serve(async (req) => {
 
   return json({
     transactionId: txnId,
+    idempotencyKey: ikey,
     pfPaymentId: txnId,           // m_payment_id is our id
     checkoutUrl: `${cfg.host}/eng/process?${params.toString()}`,
     params: Object.fromEntries(fields),

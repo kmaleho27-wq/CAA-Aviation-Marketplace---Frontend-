@@ -4,6 +4,7 @@ import { listPersonnel, createPersonnelByOperator } from '../api/personnel';
 import { LoadingBlock, ErrorBlock } from '../components/ApiState';
 import HireModal from '../components/HireModal';
 import AddCrewModal from '../components/AddCrewModal';
+import TrustBadge from '../components/TrustBadge';
 import { useToast } from '../lib/toast';
 import { getUser } from '../lib/auth';
 
@@ -58,12 +59,9 @@ const DISCIPLINE_LABEL = {
   non_licensed:     'Ground Ops',
 };
 
-const STATUS_CFG = {
-  verified: { bg: 'var(--status-verified-bg)', color: 'var(--status-verified-text)', border: 'var(--status-verified-border)', label: '✓ Verified' },
-  expiring: { bg: 'var(--status-expiring-bg)', color: 'var(--status-expiring-text)', border: 'var(--status-expiring-border)', label: 'Expiring' },
-  expired:  { bg: 'var(--status-expired-bg)',  color: 'var(--status-expired-text)',  border: 'var(--status-expired-border)',  label: 'Expired' },
-  pending:  { bg: 'var(--status-expiring-bg)', color: 'var(--status-expiring-text)', border: 'var(--status-expiring-border)', label: 'Pending' },
-};
+// Status badge styling moved into TrustBadge component (P0 #2 from
+// /autoplan: two-state honest verification — "Documents on file" until
+// real SACAA API access lands).
 
 const STAT_PILLS = [
   { value: '142', label: 'Total Verified',  color: 'var(--text-primary)' },
@@ -73,7 +71,6 @@ const STAT_PILLS = [
 ];
 
 function ContractorCard({ c, onHire }) {
-  const tone = STATUS_CFG[c.status] || STATUS_CFG.pending;
   const disabled = !c.available || c.status === 'expired';
   const hireLabel = !c.available
     ? 'Unavailable'
@@ -97,9 +94,7 @@ function ContractorCard({ c, onHire }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
             <div style={styles.name}>{c.name}</div>
-            <span style={{ ...styles.badge, background: tone.bg, color: tone.color, borderColor: tone.border }}>
-              {tone.label}
-            </span>
+            <TrustBadge row={c} status={c.status} size="sm" />
           </div>
           <div style={styles.role}>{c.role}</div>
           <div style={styles.licence}>
