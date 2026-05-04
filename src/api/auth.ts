@@ -32,18 +32,22 @@ export async function login(email, password) {
   return user;
 }
 
-export async function register({ name, email, password, role }) {
+export async function register({ name, email, password, role, metadata = {} }) {
   if (isMockApi) {
     const r = await api.post('/auth/register', { name, email, password, role });
     return r.data;
   }
 
-  // user_metadata.name + role get picked up by the handle_new_user trigger
-  // (server-side: see supabase/migrations/0001_init.sql).
+  // user_metadata gets picked up by the handle_new_user trigger
+  // (server-side: see supabase/migrations/0001_init.sql + 0007_personnel_self_signup.sql).
+  // Trigger reads: name, role, discipline, sacaa_part, licence_subtype,
+  // location, license, aircraft_category, medical_class, role_title,
+  // non_licensed_role — and creates profile + (optionally) personnel.
+  const data_payload = { name, role, ...metadata };
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { name, role } },
+    options: { data: data_payload },
   });
   if (error) throw normalizeAuthError(error);
 

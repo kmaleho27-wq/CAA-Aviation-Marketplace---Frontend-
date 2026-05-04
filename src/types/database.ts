@@ -428,15 +428,15 @@ export type Database = {
           expires: string | null
           id: string
           initials: string
-          license: string
+          license: string | null
           licence_subtype: string | null
-          location: string
+          location: string | null
           medical_class: Database["public"]["Enums"]["medical_class"]
           name: string
           non_licensed_role: string | null
-          rate: string
-          rating: string
-          role: string
+          rate: string | null
+          rating: string | null
+          role: string | null
           sacaa_part: number | null
           status: Database["public"]["Enums"]["personnel_status"]
           types: string[]
@@ -452,15 +452,15 @@ export type Database = {
           expires?: string | null
           id?: string
           initials: string
-          license: string
+          license?: string | null
           licence_subtype?: string | null
-          location: string
+          location?: string | null
           medical_class?: Database["public"]["Enums"]["medical_class"]
           name: string
           non_licensed_role?: string | null
-          rate: string
-          rating: string
-          role: string
+          rate?: string | null
+          rating?: string | null
+          role?: string | null
           sacaa_part?: number | null
           status?: Database["public"]["Enums"]["personnel_status"]
           types?: string[]
@@ -476,15 +476,15 @@ export type Database = {
           expires?: string | null
           id?: string
           initials?: string
-          license?: string
+          license?: string | null
           licence_subtype?: string | null
-          location?: string
+          location?: string | null
           medical_class?: Database["public"]["Enums"]["medical_class"]
           name?: string
           non_licensed_role?: string | null
-          rate?: string
-          rating?: string
-          role?: string
+          rate?: string | null
+          rating?: string | null
+          role?: string | null
           sacaa_part?: number | null
           status?: Database["public"]["Enums"]["personnel_status"]
           types?: string[]
