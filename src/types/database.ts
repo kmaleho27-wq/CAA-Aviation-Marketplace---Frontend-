@@ -420,51 +420,72 @@ export type Database = {
       }
       personnel: {
         Row: {
+          aircraft_category: Database["public"]["Enums"]["aircraft_category"]
           available: boolean
           created_at: string
+          discipline: Database["public"]["Enums"]["sacaa_discipline"]
+          endorsements: string[]
           expires: string | null
           id: string
           initials: string
           license: string
+          licence_subtype: string | null
           location: string
+          medical_class: Database["public"]["Enums"]["medical_class"]
           name: string
+          non_licensed_role: string | null
           rate: string
           rating: string
           role: string
+          sacaa_part: number | null
           status: Database["public"]["Enums"]["personnel_status"]
           types: string[]
           updated_at: string
           user_id: string | null
         }
         Insert: {
+          aircraft_category?: Database["public"]["Enums"]["aircraft_category"]
           available?: boolean
           created_at?: string
+          discipline: Database["public"]["Enums"]["sacaa_discipline"]
+          endorsements?: string[]
           expires?: string | null
           id?: string
           initials: string
           license: string
+          licence_subtype?: string | null
           location: string
+          medical_class?: Database["public"]["Enums"]["medical_class"]
           name: string
+          non_licensed_role?: string | null
           rate: string
           rating: string
           role: string
+          sacaa_part?: number | null
           status?: Database["public"]["Enums"]["personnel_status"]
           types?: string[]
           updated_at?: string
           user_id?: string | null
         }
         Update: {
+          aircraft_category?: Database["public"]["Enums"]["aircraft_category"]
           available?: boolean
           created_at?: string
+          discipline?: Database["public"]["Enums"]["sacaa_discipline"]
+          endorsements?: string[]
           expires?: string | null
           id?: string
           initials?: string
           license?: string
+          licence_subtype?: string | null
           location?: string
+          medical_class?: Database["public"]["Enums"]["medical_class"]
           name?: string
+          non_licensed_role?: string | null
           rate?: string
           rating?: string
           role?: string
+          sacaa_part?: number | null
           status?: Database["public"]["Enums"]["personnel_status"]
           types?: string[]
           updated_at?: string
@@ -712,38 +733,59 @@ export type Database = {
     Views: {
       personnel_public: {
         Row: {
+          aircraft_category: Database["public"]["Enums"]["aircraft_category"] | null
           available: boolean | null
           created_at: string | null
+          discipline: Database["public"]["Enums"]["sacaa_discipline"] | null
+          endorsements: string[] | null
           id: string | null
           initials: string | null
+          licence_subtype: string | null
           location: string | null
+          medical_class: Database["public"]["Enums"]["medical_class"] | null
           name: string | null
+          non_licensed_role: string | null
           rating: string | null
           role: string | null
+          sacaa_part: number | null
           status: Database["public"]["Enums"]["personnel_status"] | null
           types: string[] | null
         }
         Insert: {
+          aircraft_category?: Database["public"]["Enums"]["aircraft_category"] | null
           available?: boolean | null
           created_at?: string | null
+          discipline?: Database["public"]["Enums"]["sacaa_discipline"] | null
+          endorsements?: string[] | null
           id?: string | null
           initials?: string | null
+          licence_subtype?: string | null
           location?: string | null
+          medical_class?: Database["public"]["Enums"]["medical_class"] | null
           name?: string | null
+          non_licensed_role?: string | null
           rating?: string | null
           role?: string | null
+          sacaa_part?: number | null
           status?: Database["public"]["Enums"]["personnel_status"] | null
           types?: string[] | null
         }
         Update: {
+          aircraft_category?: Database["public"]["Enums"]["aircraft_category"] | null
           available?: boolean | null
           created_at?: string | null
+          discipline?: Database["public"]["Enums"]["sacaa_discipline"] | null
+          endorsements?: string[] | null
           id?: string | null
           initials?: string | null
+          licence_subtype?: string | null
           location?: string | null
+          medical_class?: Database["public"]["Enums"]["medical_class"] | null
           name?: string | null
+          non_licensed_role?: string | null
           rating?: string | null
           role?: string | null
+          sacaa_part?: number | null
           status?: Database["public"]["Enums"]["personnel_status"] | null
           types?: string[] | null
         }
@@ -842,6 +884,16 @@ export type Database = {
       }
     }
     Enums: {
+      aircraft_category:
+        | "aeroplane"
+        | "helicopter"
+        | "glider"
+        | "balloon"
+        | "microlight"
+        | "gyroplane"
+        | "lsa"
+        | "rpas"
+        | "none"
       audit_event_type:
         | "rts.signed"
         | "funds.released"
@@ -862,11 +914,29 @@ export type Database = {
       job_urgency: "aog" | "normal"
       kyc_risk: "low" | "medium" | "high"
       kyc_status: "pending" | "approved" | "rejected"
+      medical_class:
+        | "class_1"
+        | "class_2"
+        | "class_3"
+        | "class_4"
+        | "none"
       notification_type: "aog" | "warning" | "success"
       part_condition: "New" | "Overhauled" | "Serviceable"
       part_status: "verified" | "expiring" | "expired"
       personnel_status: "verified" | "expiring" | "expired" | "pending"
       role: "AME" | "AMO" | "OPERATOR" | "SUPPLIER" | "ADMIN"
+      sacaa_discipline:
+        | "flight_crew"
+        | "national_pilot"
+        | "glider_pilot"
+        | "balloon_pilot"
+        | "rpas_pilot"
+        | "flight_engineer"
+        | "cabin_crew"
+        | "atc"
+        | "ame"
+        | "aviation_medical"
+        | "non_licensed"
       transaction_status: "rts-pending" | "in-escrow" | "completed" | "dispute"
       transaction_type: "Parts" | "Personnel" | "MRO"
     }

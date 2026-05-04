@@ -1,4 +1,8 @@
 import { supabase, snakeToCamel } from '../lib/supabase';
+import type { Database } from '../types/database';
+
+type Discipline = Database['public']['Enums']['sacaa_discipline'];
+type AircraftCategory = Database['public']['Enums']['aircraft_category'];
 
 /**
  * Marketplace personnel listing.
@@ -8,18 +12,44 @@ import { supabase, snakeToCamel } from '../lib/supabase';
  * fields once a transaction links the two parties (which RLS allows on
  * the underlying `personnel` table).
  *
- * Filters:
- *   - filter: 'available' | 'verified' | 'all' (legacy semantics)
+ * Filters (all optional, AND-combined):
+ *   - discipline:        Part 61/62/.../non_licensed bucket
+ *   - sacaaPart:         numeric Part (61, 62, 63, 64, 65, 66, 67, 68, 69, 71)
+ *   - aircraftCategory:  aeroplane / helicopter / glider / ... / none
+ *   - location:          substring match on city
+ *   - availableOnly:     true → only currently available crew
+ *   - verifiedOnly:      true → only verified status
+ *
+ * Legacy single-string filter still supported for older callers:
+ *   listPersonnel({ filter: 'available' | 'verified' | 'all' })
  */
-export async function listPersonnel(opts: { filter?: 'available' | 'verified' | 'all' } = {}) {
-  const { filter = 'all' } = opts;
+export interface PersonnelFilter {
+  discipline?: Discipline;
+  sacaaPart?: number;
+  aircraftCategory?: AircraftCategory;
+  location?: string;
+  availableOnly?: boolean;
+  verifiedOnly?: boolean;
+  /** @deprecated use availableOnly / verifiedOnly */
+  filter?: 'available' | 'verified' | 'all';
+}
+
+export async function listPersonnel(opts: PersonnelFilter = {}) {
   let q = supabase
     .from('personnel_public')
     .select('*')
     .order('created_at', { ascending: false });
 
-  if (filter === 'available') q = q.eq('available', true);
-  if (filter === 'verified')  q = q.eq('status', 'verified');
+  // Legacy
+  if (opts.filter === 'available') q = q.eq('available', true);
+  if (opts.filter === 'verified')  q = q.eq('status', 'verified');
+
+  if (opts.discipline)        q = q.eq('discipline', opts.discipline);
+  if (opts.sacaaPart != null) q = q.eq('sacaa_part', opts.sacaaPart);
+  if (opts.aircraftCategory)  q = q.eq('aircraft_category', opts.aircraftCategory);
+  if (opts.location)          q = q.ilike('location', `%${opts.location}%`);
+  if (opts.availableOnly)     q = q.eq('available', true);
+  if (opts.verifiedOnly)      q = q.eq('status', 'verified');
 
   const { data, error } = await q;
   if (error) throw error;

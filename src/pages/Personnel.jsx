@@ -4,7 +4,51 @@ import { listPersonnel } from '../api/personnel';
 import { LoadingBlock, ErrorBlock } from '../components/ApiState';
 import HireModal from '../components/HireModal';
 
-const FILTERS = ['All', 'Available', 'Part 66', 'Part 61', 'Part 64', 'Johannesburg', 'Cape Town'];
+// Filter chips. Each one maps to a `listPersonnel` filter object —
+// see resolveFilter() below. Order matches the SACAA Parts plus
+// availability and a few popular city shortcuts.
+const FILTERS = [
+  { key: 'all',          label: 'All' },
+  { key: 'available',    label: 'Available' },
+  // SACAA Parts
+  { key: 'flight_crew',     label: 'Pilots (61)' },
+  { key: 'national_pilot',  label: 'NPL (62)' },
+  { key: 'flight_engineer', label: 'Flight Engineer (63)' },
+  { key: 'cabin_crew',      label: 'Cabin Crew (64)' },
+  { key: 'atc',             label: 'ATC (65)' },
+  { key: 'ame',             label: 'AME (66)' },
+  { key: 'aviation_medical',label: 'DAME (67)' },
+  { key: 'glider_pilot',    label: 'Glider (68)' },
+  { key: 'balloon_pilot',   label: 'Balloon (69)' },
+  { key: 'rpas_pilot',      label: 'RPAS (71)' },
+  { key: 'non_licensed',    label: 'Ground Ops' },
+  // Cities
+  { key: 'loc:Johannesburg', label: 'Johannesburg' },
+  { key: 'loc:Cape Town',    label: 'Cape Town' },
+  { key: 'loc:Pretoria',     label: 'Pretoria' },
+];
+
+function resolveFilter(key) {
+  if (key === 'all') return {};
+  if (key === 'available') return { availableOnly: true };
+  if (key.startsWith('loc:')) return { location: key.slice(4) };
+  return { discipline: key };
+}
+
+// Discipline → short label shown on the contractor card.
+const DISCIPLINE_LABEL = {
+  flight_crew:      'Pilot',
+  national_pilot:   'NPL',
+  glider_pilot:     'Glider',
+  balloon_pilot:    'Balloon',
+  rpas_pilot:       'RPAS',
+  flight_engineer:  'FE',
+  cabin_crew:       'Cabin Crew',
+  atc:              'ATC',
+  ame:              'AME',
+  aviation_medical: 'DAME',
+  non_licensed:     'Ground Ops',
+};
 
 const STATUS_CFG = {
   verified: { bg: 'var(--status-verified-bg)', color: 'var(--status-verified-text)', border: 'var(--status-verified-border)', label: '✓ Verified' },
@@ -50,14 +94,21 @@ function ContractorCard({ c, onHire }) {
             </span>
           </div>
           <div style={styles.role}>{c.role}</div>
-          <div style={styles.licence}>{c.license} · {c.rating}</div>
+          <div style={styles.licence}>
+            {c.sacaaPart ? `Part ${c.sacaaPart}` : DISCIPLINE_LABEL[c.discipline] || c.rating}
+            {c.licenceSubtype ? ` · ${c.licenceSubtype}` : ''}
+            {c.medicalClass && c.medicalClass !== 'none' ? ` · ${c.medicalClass.replace('_', ' ')}` : ''}
+          </div>
         </div>
       </div>
 
       <div style={styles.divider} />
 
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', marginBottom: 10 }}>
-        {c.types.map((t) => <span key={t} style={styles.typeTag}>{t}</span>)}
+        {(c.types || []).map((t) => <span key={`t-${t}`} style={styles.typeTag}>{t}</span>)}
+        {(c.endorsements || []).slice(0, 3).map((e) => (
+          <span key={`e-${e}`} style={{ ...styles.typeTag, color: 'var(--text-warning)' }}>{e}</span>
+        ))}
         <span style={{ ...styles.typeTag, marginLeft: 'auto', color: 'var(--text-tertiary)' }}>{c.location}</span>
       </div>
 
@@ -76,11 +127,12 @@ function ContractorCard({ c, onHire }) {
 }
 
 export default function Personnel() {
-  const [filter, setFilter] = useState('All');
+  const [filter, setFilter] = useState('all');
   const [hired, setHired] = useState(null);
 
-  const query = useApi(() => listPersonnel({ filter }), [filter]);
+  const query = useApi(() => listPersonnel(resolveFilter(filter)), [filter]);
   const filtered = query.data || [];
+  const activeFilterLabel = FILTERS.find((f) => f.key === filter)?.label ?? filter;
 
   return (
     <div style={styles.page}>
@@ -104,11 +156,11 @@ export default function Personnel() {
       <div style={styles.filterRow}>
         {FILTERS.map((f) => (
           <button
-            key={f}
-            onClick={() => setFilter(f)}
-            style={{ ...styles.filterBtn, ...(filter === f ? styles.filterBtnActive : {}) }}
+            key={f.key}
+            onClick={() => setFilter(f.key)}
+            style={{ ...styles.filterBtn, ...(filter === f.key ? styles.filterBtnActive : {}) }}
           >
-            {f}
+            {f.label}
           </button>
         ))}
       </div>
@@ -119,7 +171,7 @@ export default function Personnel() {
         <ErrorBlock error={query.error} onRetry={query.refetch} />
       ) : filtered.length === 0 ? (
         <div style={styles.empty}>
-          <div style={styles.emptyTitle}>No contractors match "{filter}"</div>
+          <div style={styles.emptyTitle}>No contractors match "{activeFilterLabel}"</div>
           <div style={styles.emptySub}>Switch back to "All" or try another category.</div>
         </div>
       ) : (

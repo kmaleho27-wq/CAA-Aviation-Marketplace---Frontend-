@@ -51,13 +51,61 @@ const PARTS = [
 ];
 
 // ── Personnel ───────────────────────────────────────────────────────
+// Discipline / part / subtype / aircraft / medical columns added in
+// migration 0006 (SACAA Parts 61-71 + non_licensed). Fresh DBs need
+// these populated; the migration backfills the original 6 rows for
+// existing DBs but new clones run through this script.
 const PERSONNEL = [
-  { name: 'Sipho Dlamini',   initials: 'SD', license: 'SA-0142-B1',  role: 'Licensed Aircraft Engineer', rating: 'Part 66 Cat B1', types: ['B737','A320'],   location: 'Johannesburg', status: 'verified', expires: '2025-08-14', available: true,  rate: 'ZAR 4,200/day' },
-  { name: 'Anele Mokoena',   initials: 'AM', license: 'SA-0089-P1',  role: 'Commercial Pilot',           rating: 'Part 61 ATPL',   types: ['B737','B767'],   location: 'Cape Town',    status: 'expiring', expires: '2024-12-30', available: true,  rate: 'ZAR 6,800/day' },
-  { name: 'Tariq Hassan',    initials: 'TH', license: 'KE-0301-ATC', role: 'Air Traffic Controller',     rating: 'Part 64 ATC',    types: ['Enroute','APP'], location: 'Nairobi',      status: 'pending',  expires: null,         available: false, rate: 'ZAR 5,100/day' },
-  { name: 'Nomvula Khumalo', initials: 'NK', license: 'SA-0056-B2',  role: 'Avionics Engineer',          rating: 'Part 66 Cat B2', types: ['A320','A330'],   location: 'Durban',       status: 'expired',  expires: '2024-09-01', available: false, rate: 'ZAR 3,900/day' },
-  { name: 'Kagiso Sithole',  initials: 'KS', license: 'SA-0211-P2',  role: 'Commercial Pilot',           rating: 'Part 61 CPL',    types: ['C208','PC-12'],  location: 'Pretoria',     status: 'verified', expires: '2026-03-22', available: true,  rate: 'ZAR 3,200/day' },
-  { name: 'Amara Diallo',    initials: 'AD', license: 'SA-0388-B1',  role: 'Licensed Aircraft Engineer', rating: 'Part 66 Cat B1', types: ['B737','B747'],   location: 'Johannesburg', status: 'verified', expires: '2025-11-08', available: true,  rate: 'ZAR 4,500/day' },
+  // Original 6
+  { name: 'Sipho Dlamini',   initials: 'SD', license: 'SA-0142-B1',  role: 'Licensed Aircraft Engineer', rating: 'Part 66 Cat B1', types: ['B737','A320'],   location: 'Johannesburg', status: 'verified', expires: '2025-08-14', available: true,  rate: 'ZAR 4,200/day',
+    discipline: 'ame', sacaa_part: 66, licence_subtype: 'B1', aircraft_category: 'aeroplane', medical_class: 'none',    endorsements: [] },
+  { name: 'Anele Mokoena',   initials: 'AM', license: 'SA-0089-P1',  role: 'Commercial Pilot',           rating: 'Part 61 ATPL',   types: ['B737','B767'],   location: 'Cape Town',    status: 'expiring', expires: '2024-12-30', available: true,  rate: 'ZAR 6,800/day',
+    discipline: 'flight_crew', sacaa_part: 61, licence_subtype: 'ATPL', aircraft_category: 'aeroplane', medical_class: 'class_1', endorsements: ['Instrument','B737 Type','B767 Type'] },
+  { name: 'Tariq Hassan',    initials: 'TH', license: 'KE-0301-ATC', role: 'Air Traffic Controller',     rating: 'Part 65 ATC-APP',types: ['Enroute','APP'], location: 'Nairobi',      status: 'pending',  expires: null,         available: false, rate: 'ZAR 5,100/day',
+    discipline: 'atc', sacaa_part: 65, licence_subtype: 'ATC-APP', aircraft_category: 'none', medical_class: 'class_2', endorsements: ['Approach','Enroute'] },
+  { name: 'Nomvula Khumalo', initials: 'NK', license: 'SA-0056-B2',  role: 'Avionics Engineer',          rating: 'Part 66 Cat B2', types: ['A320','A330'],   location: 'Durban',       status: 'expired',  expires: '2024-09-01', available: false, rate: 'ZAR 3,900/day',
+    discipline: 'ame', sacaa_part: 66, licence_subtype: 'B2', aircraft_category: 'aeroplane', medical_class: 'none', endorsements: ['Avionics'] },
+  { name: 'Kagiso Sithole',  initials: 'KS', license: 'SA-0211-P2',  role: 'Commercial Pilot',           rating: 'Part 61 CPL',    types: ['C208','PC-12'],  location: 'Pretoria',     status: 'verified', expires: '2026-03-22', available: true,  rate: 'ZAR 3,200/day',
+    discipline: 'flight_crew', sacaa_part: 61, licence_subtype: 'CPL', aircraft_category: 'aeroplane', medical_class: 'class_1', endorsements: ['Instrument'] },
+  { name: 'Amara Diallo',    initials: 'AD', license: 'SA-0388-B1',  role: 'Licensed Aircraft Engineer', rating: 'Part 66 Cat B1', types: ['B737','B747'],   location: 'Johannesburg', status: 'verified', expires: '2025-11-08', available: true,  rate: 'ZAR 4,500/day',
+    discipline: 'ame', sacaa_part: 66, licence_subtype: 'B1', aircraft_category: 'aeroplane', medical_class: 'none', endorsements: [] },
+
+  // Added in 0006 — covers cabin crew, DAME, RPAS, FE, firefighter, marshaller, NPL.
+  { name: 'Lerato Tshabalala', initials: 'LT', license: 'SA-CC-2024-0058', role: 'Senior Cabin Crew',
+    rating: 'Part 64 SEP', types: ['B737','A320'], location: 'Johannesburg',
+    status: 'verified', expires: '2026-09-30', available: true, rate: 'ZAR 2,800/day',
+    discipline: 'cabin_crew', sacaa_part: 64, licence_subtype: 'CCM', aircraft_category: 'aeroplane', medical_class: 'class_2',
+    endorsements: ['SEP Current','CRM','B737 Type','A320 Type'] },
+  { name: 'Dr Priya Naidoo', initials: 'PN', license: 'SA-DAME-0091', role: 'Designated Aviation Medical Examiner',
+    rating: 'Part 67 DAME', types: [], location: 'Cape Town',
+    status: 'verified', expires: '2027-01-15', available: true, rate: 'ZAR 850/exam',
+    discipline: 'aviation_medical', sacaa_part: 67, licence_subtype: 'DAME', aircraft_category: 'none', medical_class: 'none',
+    endorsements: ['Class 1 Authority','Class 2 Authority','Class 3 Authority','Class 4 Authority'] },
+  { name: 'Lwazi Mthembu', initials: 'LM', license: 'SA-RPAS-2025-0042', role: 'RPAS Pilot — Aerial Survey',
+    rating: 'Part 71 RPL', types: ['Multirotor','Fixed-wing'], location: 'Pretoria',
+    status: 'verified', expires: '2026-12-31', available: true, rate: 'ZAR 3,500/day',
+    discipline: 'rpas_pilot', sacaa_part: 71, licence_subtype: 'RPL', aircraft_category: 'rpas', medical_class: 'class_4',
+    endorsements: ['BVLOS Approval','Aerial Survey Endorsement'] },
+  { name: 'Captain Johan van der Merwe', initials: 'JM', license: 'SA-FE-0017', role: 'Flight Engineer — B747',
+    rating: 'Part 63 FE', types: ['B747'], location: 'Johannesburg',
+    status: 'verified', expires: '2026-04-30', available: true, rate: 'ZAR 7,200/day',
+    discipline: 'flight_engineer', sacaa_part: 63, licence_subtype: 'FE', aircraft_category: 'aeroplane', medical_class: 'class_1',
+    endorsements: ['B747 Type'] },
+  { name: 'Themba Zulu', initials: 'TZ', license: 'NL-FIRE-2024-0023', role: 'Aviation Firefighter — ICAO Cat 9',
+    rating: 'ICAO 9 RFF', types: [], location: 'Johannesburg',
+    status: 'verified', expires: null, available: true, rate: 'ZAR 4,500/day',
+    discipline: 'non_licensed', sacaa_part: null, licence_subtype: null, aircraft_category: 'none', medical_class: 'none',
+    endorsements: [], non_licensed_role: 'aviation_firefighter' },
+  { name: 'Nokuthula Dube', initials: 'ND', license: 'NL-MARSH-2024-0011', role: 'Aircraft Marshaller / Ramp Coordinator',
+    rating: 'GHM-3', types: [], location: 'Cape Town',
+    status: 'verified', expires: null, available: true, rate: 'ZAR 1,800/day',
+    discipline: 'non_licensed', sacaa_part: null, licence_subtype: null, aircraft_category: 'none', medical_class: 'none',
+    endorsements: [], non_licensed_role: 'marshaller' },
+  { name: 'Hennie Botha', initials: 'HB', license: 'SA-NPL-2023-0211', role: 'Recreational Pilot — Microlight',
+    rating: 'Part 62 NPL', types: ['Microlight','Gyroplane'], location: 'Pretoria',
+    status: 'verified', expires: '2026-07-12', available: true, rate: 'ZAR 1,500/day',
+    discipline: 'national_pilot', sacaa_part: 62, licence_subtype: 'NPL', aircraft_category: 'microlight', medical_class: 'class_4',
+    endorsements: ['Microlight','Gyroplane'] },
 ];
 
 // ── Documents ───────────────────────────────────────────────────────
@@ -173,6 +221,13 @@ async function main() {
     rating: p.rating, types: p.types, location: p.location, status: p.status,
     expires: p.expires ? ISO(p.expires) : null,
     available: p.available, rate: p.rate,
+    discipline: p.discipline,
+    sacaa_part: p.sacaa_part,
+    licence_subtype: p.licence_subtype,
+    aircraft_category: p.aircraft_category,
+    medical_class: p.medical_class,
+    endorsements: p.endorsements ?? [],
+    non_licensed_role: p.non_licensed_role ?? null,
     user_id: p.license === 'SA-0142-B1' ? contractorId : null,
   }));
   const { error: pplErr } = await sb.from('personnel').upsert(personnelRows, { onConflict: 'license' });
