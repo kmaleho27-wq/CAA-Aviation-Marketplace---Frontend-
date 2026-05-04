@@ -30,16 +30,18 @@ export function initSentry() {
     dsn: DSN,
     environment: import.meta.env.MODE,             // "production" | "development"
     release: import.meta.env.VITE_SENTRY_RELEASE,  // optional — set in Netlify build hook
-    // Default integrations include browserTracing + replay; we leave
-    // them off for now (cost + privacy). Enable later if we want
-    // performance monitoring.
-    integrations: [],
-    // Sample 100% of errors (low-volume product). Bring tracesSampleRate
-    // up if/when we add browserTracing.
+    // No `integrations` key passed → Sentry uses its safe defaults
+    // (GlobalHandlers, Breadcrumbs, Dedupe, etc.). DO NOT pass
+    // `integrations: []` here — that overrides defaults and silently
+    // disables uncaught-error capture, which is the whole point.
+    //
+    // Heavier opt-in integrations like browserTracingIntegration() and
+    // replayIntegration() stay off until we explicitly want them
+    // (cost + privacy considerations).
     tracesSampleRate: 0,
-    // Sentry's beforeSend lets us scrub PII before transmit. Currently
-    // a no-op, but the hook is here as a defence in depth point if we
-    // ever capture form values etc.
+    // beforeSend lets us scrub PII before transmit. Currently a no-op
+    // but the hook is here as a defence-in-depth point if we ever
+    // capture form values etc.
     beforeSend(event) {
       return event;
     },
