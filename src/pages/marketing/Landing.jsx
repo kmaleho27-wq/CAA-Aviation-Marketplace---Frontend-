@@ -2,10 +2,10 @@ import { Link } from 'react-router-dom';
 
 const FEATURES = [
   {
-    title: 'Personnel Marketplace',
-    body: 'Find and hire SACAA-verified pilots, engineers and ATC officers. Every contractor carries a Digital Crew Wallet with live licence currency, type ratings and medical status.',
+    title: 'Aviation Crew Marketplace',
+    body: 'Find and hire SACAA-licensed pilots, cabin crew, ATC officers, flight engineers, AMEs, DAMEs, RPAS pilots and ground operations staff. Every professional carries a Digital Crew Wallet with live licence currency, type ratings and medical status.',
     href: '/login',
-    cta: 'Browse personnel →',
+    cta: 'Browse crews →',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
         <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
@@ -29,7 +29,7 @@ const FEATURES = [
   },
   {
     title: 'Regulatory Compliance Gateway',
-    body: 'Live SACAA e-Services integration. Funds are held in escrow and only released when a validated Part 145 engineer signs the Digital Release to Service — every time.',
+    body: 'Live SACAA e-Services integration covering Parts 61–71. Funds are held in escrow and released only when the licensed signatory completes the Digital Sign-off — every flight, every contract, every time.',
     href: '#compliance',
     cta: 'How compliance works →',
     icon: (
@@ -40,8 +40,8 @@ const FEATURES = [
     ),
   },
   {
-    title: 'AOG Rapid Response',
-    body: 'When an aircraft goes on ground, our AI identifies the nearest compliant part and engineer simultaneously. Average response time: under 90 minutes.',
+    title: 'AOG & Crew Rapid Response',
+    body: 'Aircraft on ground or short a crew member? Our matching engine finds the nearest compliant part and the right licensed person — pilot, engineer or cabin crew — at the same time. Average response: under 90 minutes.',
     href: '/login',
     cta: 'See AOG flow →',
     icon: (
@@ -52,7 +52,7 @@ const FEATURES = [
   },
   {
     title: 'Escrow & Settlement',
-    body: 'Multi-currency escrow via Stripe Connect. Funds are locked until the Technical Sign-off is complete — protecting both buyer and seller on every transaction.',
+    body: 'Multi-currency escrow via PayFast for South African flows. Funds lock until the Digital Sign-off is complete — protecting airline and contractor on every transaction.',
     href: '#how',
     cta: 'Learn about escrow →',
     icon: (
@@ -63,8 +63,8 @@ const FEATURES = [
     ),
   },
   {
-    title: 'Fleet Compliance Dashboard',
-    body: 'Airlines and MROs get a live compliance dashboard — licence expiry watchdog, AOG tracker, escrow balance, and a full audit vault for SACAA inspections.',
+    title: 'Fleet Operations Dashboard',
+    body: 'Airlines, MROs and operators get a live operations dashboard — crew licence expiry watchdog, AOG tracker, escrow balance and a full audit vault for SACAA inspections.',
     href: '/login',
     cta: 'View dashboard →',
     icon: (
@@ -78,10 +78,10 @@ const FEATURES = [
 ];
 
 const STEPS = [
-  { num: '01', title: 'Post Requirement',     body: 'Airline logs an AOG event or posts a requirement. AI immediately matches the nearest compliant part and engineer.' },
-  { num: '02', title: 'Compliance Check',     body: 'Supplier CSD status and engineer SACAA currency are verified live via e-Services API. Non-compliant resources are blocked automatically.' },
+  { num: '01', title: 'Post Requirement',     body: 'Airline or operator logs an AOG event, crew shortfall or routine requirement. The matching engine surfaces the nearest compliant part and the right licensed crew — pilot, engineer, cabin crew, ATC or ground ops.' },
+  { num: '02', title: 'Compliance Check',     body: 'Supplier CSD status and SACAA licence currency (Parts 61–71) are verified live via e-Services. Non-compliant resources are blocked automatically.' },
   { num: '03', title: 'Funds to Escrow',      body: 'Airline initiates payment. Funds are locked in escrow — visible to both parties but inaccessible until work is complete and verified.' },
-  { num: '04', title: 'Digital RTS Sign-off', body: 'Engineer signs the Digital Release to Service via biometric authentication. Funds are released instantly. Audit trail is permanently recorded.' },
+  { num: '04', title: 'Digital Sign-off',     body: 'The licensed signatory — Part 145 engineer, pilot in command or designated examiner — signs off via biometric authentication. Funds release instantly. Audit trail is permanently recorded.' },
 ];
 
 const STATS = [
@@ -92,36 +92,37 @@ const STATS = [
 ];
 
 const CHECKS = [
-  { title: 'SACAA e-Services live integration', body: 'Licence numbers, medical certificates and type ratings verified in real-time against SACAA\'s own databases before any match is made.' },
-  { title: 'National Treasury CSD vetting',     body: 'All South African suppliers are cross-referenced with the Central Supplier Database before funds are released.' },
-  { title: 'Hyperledger immutable audit trail', body: 'Every Release to Service event is permanently recorded on a private blockchain — tamper-proof for SACAA inspections.' },
-  { title: '90-day expiry watchdog',            body: 'The platform automatically flags licences and certificates expiring within 90 days — preventing unlicensed operation before it happens.' },
+  { title: 'SACAA e-Services live integration', body: 'Pilot, cabin crew, ATC, engineer, DAME and RPAS licences plus medical certificates and type ratings — all verified in real-time against SACAA\'s own databases before any match is made.' },
+  { title: 'National Treasury CSD vetting',     body: 'All South African suppliers and operators are cross-referenced with the Central Supplier Database before funds are released.' },
+  { title: 'Tamper-proof audit chain',          body: 'Every sign-off, escrow event and dispute resolution is permanently recorded on a hash-chained ledger — verifiable for SACAA inspections.' },
+  { title: '90-day expiry watchdog',            body: 'The platform automatically flags crew licences, medicals and type ratings expiring within 90 days — preventing unlicensed operation before it happens.' },
 ];
 
 const COMPLIANCE_VAULT_ROWS = [
-  { name: 'SACAA Part 66 — Cat B1',  ref: 'SA-0142-B1',         status: 'verified', label: '✓ Verified' },
-  { name: 'EASA Form 1 — CFM56-7B',  ref: 'EASA-F1-2024-0342',  status: 'verified', label: '✓ Verified' },
-  { name: 'B737 Type Rating',         ref: 'TR-B737-SA-0142',    status: 'expiring', label: '⚠ 42d' },
-  { name: 'SACAA AMO Certificate',   ref: 'AMO-SA-2023-0089',   status: 'expiring', label: '⚠ 58d' },
-  { name: 'Digital RTS — ZS-OAL',    ref: 'RTS-2024-11-0041',   status: 'verified', label: '✓ Signed' },
+  { name: 'Part 61 ATPL — Pilot',     ref: 'SA-0089-P1',         status: 'verified', label: '✓ Verified' },
+  { name: 'Part 64 Cabin Crew',        ref: 'SA-CC-2024-0058',    status: 'verified', label: '✓ Verified' },
+  { name: 'Part 66 AME Cat B1',        ref: 'SA-0142-B1',         status: 'verified', label: '✓ Verified' },
+  { name: 'B737 Type Rating',          ref: 'TR-B737-SA-0089',    status: 'expiring', label: '⚠ 42d' },
+  { name: 'Class 1 Medical',           ref: 'MED-SA-0089-CL1',    status: 'expiring', label: '⚠ 58d' },
+  { name: 'Part 71 RPAS — RPL',        ref: 'SA-RPAS-2025-0042',  status: 'verified', label: '✓ Verified' },
 ];
 
 const PRICING_TEASER = [
   {
-    tier: 'Contractor',
+    tier: 'Aviation Professional',
     price: 'Free',
     note: '3% success fee on completed contracts',
-    features: ['Digital Crew Wallet', 'AI job matching', 'SACAA verification badge', 'Digital RTS sign-off', 'Biometric authentication'],
+    features: ['Digital Crew Wallet', 'Job matching across Parts 61–71', 'SACAA verification badge', 'Digital sign-off (pilot, engineer, DAME)', 'Biometric authentication'],
     cta: 'Create Profile →',
     href: '/register',
     style: 'outline',
   },
   {
-    tier: 'Enterprise',
+    tier: 'Airline / Operator',
     price: 'ZAR 12,500',
     suffix: '/mo',
     note: '+ 3% transaction commission',
-    features: ['Fleet compliance dashboard', 'Unlimited personnel management', 'AOG rapid response priority', 'Compliance Vault & audit export', 'Multi-user access & roles', 'SACAA inspection reporting'],
+    features: ['Fleet & crew compliance dashboard', 'Unlimited crew management', 'AOG & crew rapid response priority', 'Compliance Vault & audit export', 'Multi-user access & roles', 'SACAA inspection reporting'],
     cta: 'Get Started →',
     href: '/register',
     style: 'primary',
@@ -159,23 +160,28 @@ export default function Landing() {
             Africa's Aviation Trust Engine
           </div>
           <h1 style={styles.heroH1}>
-            Every part.<br />
-            Every engineer.
+            Every flight.<br />
+            Every crew.
             <em style={styles.heroEm}>Verified.</em>
           </h1>
           <p style={styles.heroBody}>
-            Naluka is the aviation ecosystem marketplace where airlines, MROs, engineers and suppliers connect — with SACAA compliance built into every transaction.
+            Naluka is Africa's aviation marketplace — where airlines, MROs, pilots, cabin crew, engineers, ATC, ground ops and suppliers connect with SACAA compliance built into every transaction.
           </p>
           <div style={styles.heroActions}>
             <Link to="/register" style={styles.btnPrimaryLg}>Request Demo →</Link>
             <Link to="/login" style={styles.btnOutlineLg}>View Platform</Link>
           </div>
           <div style={styles.heroTrust}>
-            {['SACAA Compliant', 'ICAO Aligned', 'Hyperledger Audit Trail', 'AES-256 Encrypted'].map((b) => (
-              <span key={b} style={styles.trustBadge}>
+            {['SACAA Compliant', 'ICAO Aligned', 'Hash-Chained Audit', 'AES-256 Encrypted'].map((b) => (
+              <a
+                key={b}
+                href="#compliance"
+                style={styles.trustBadge}
+                aria-label={`${b} — read more in compliance section`}
+              >
                 <span style={styles.trustDot} />
                 {b}
-              </span>
+              </a>
             ))}
           </div>
         </div>
@@ -391,10 +397,15 @@ export default function Landing() {
             Ready to connect to African<br />
             <em style={styles.h2Em}>aviation's trust layer?</em>
           </h2>
-          <p style={styles.ctaBody}>Join the engineers, airlines and suppliers already operating on Naluka.</p>
+          <p style={styles.ctaBody}>Join the airlines, crews and suppliers already operating on Naluka.</p>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
             <Link to="/register" style={{ ...styles.btnPrimaryLg, fontSize: 15, padding: '14px 32px' }}>Request Demo →</Link>
-            <Link to="/login" style={{ ...styles.btnOutlineLg, fontSize: 15, padding: '14px 24px' }}>Contact Sales</Link>
+            <a
+              href="mailto:hello@naluka.aero?subject=Naluka%20—%20Sales%20enquiry"
+              style={{ ...styles.btnOutlineLg, fontSize: 15, padding: '14px 24px' }}
+            >
+              Contact Sales
+            </a>
           </div>
         </div>
       </section>
@@ -489,6 +500,9 @@ const styles = {
     padding: '5px 12px',
     fontSize: 12,
     color: 'var(--text-tertiary)',
+    textDecoration: 'none',
+    cursor: 'pointer',
+    transition: 'background var(--transition-fast), border-color var(--transition-fast)',
   },
   trustDot: { width: 6, height: 6, borderRadius: '50%', background: 'var(--color-sage-500)' },
 
