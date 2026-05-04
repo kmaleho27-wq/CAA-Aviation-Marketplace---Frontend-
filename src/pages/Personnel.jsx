@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { useApi } from '../lib/useApi';
-import { listPersonnel } from '../api/personnel';
+import { listPersonnel, createPersonnelByOperator } from '../api/personnel';
 import { LoadingBlock, ErrorBlock } from '../components/ApiState';
 import HireModal from '../components/HireModal';
+import AddCrewModal from '../components/AddCrewModal';
+import { useToast } from '../lib/toast';
+import { getUser } from '../lib/auth';
 
 // Filter chips. Each one maps to a `listPersonnel` filter object —
 // see resolveFilter() below. Order matches the SACAA Parts plus
@@ -28,9 +31,14 @@ const FILTERS = [
   { key: 'loc:Pretoria',     label: 'Pretoria' },
 ];
 
-function resolveFilter(key) {
+// Operator-only chip — only rendered when the signed-in user has role
+// OPERATOR (their own crew, including pending rows they just added).
+const OPERATOR_FILTER = { key: 'my_crew', label: 'My crew' };
+
+function resolveFilter(key, operatorId) {
   if (key === 'all') return {};
   if (key === 'available') return { availableOnly: true };
+  if (key === 'my_crew') return { createdByOperator: operatorId };
   if (key.startsWith('loc:')) return { location: key.slice(4) };
   return { discipline: key };
 }
@@ -129,10 +137,30 @@ function ContractorCard({ c, onHire }) {
 export default function Personnel() {
   const [filter, setFilter] = useState('all');
   const [hired, setHired] = useState(null);
+  const [addOpen, setAddOpen] = useState(false);
+  const toast = useToast();
 
-  const query = useApi(() => listPersonnel(resolveFilter(filter)), [filter]);
+  const authUser = getUser();
+  const isOperator = authUser?.role === 'OPERATOR' || authUser?.role === 'ADMIN';
+  const operatorId = authUser?.id;
+
+  const filterChips = isOperator ? [...FILTERS, OPERATOR_FILTER] : FILTERS;
+
+  const query = useApi(() => listPersonnel(resolveFilter(filter, operatorId)), [filter]);
   const filtered = query.data || [];
-  const activeFilterLabel = FILTERS.find((f) => f.key === filter)?.label ?? filter;
+  const activeFilterLabel = filterChips.find((f) => f.key === filter)?.label ?? filter;
+
+  const handleCrewCreated = async (payload) => {
+    try {
+      await createPersonnelByOperator(payload);
+      toast.success(`${payload.name} added — pending admin verification`);
+      setAddOpen(false);
+      query.refetch();
+    } catch (err) {
+      toast.error(err.message || 'Could not add crew member.');
+    }
+  };
+
 
   return (
     <div style={styles.page}>
@@ -141,7 +169,14 @@ export default function Personnel() {
           <div style={styles.overline}>Supply Side</div>
           <h1 style={styles.h1}>Personnel Marketplace</h1>
         </div>
-        <button style={styles.btnPrimary}>+ Post Requirement</button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {isOperator && (
+            <button onClick={() => setAddOpen(true)} style={styles.btnPrimary}>+ Add crew</button>
+          )}
+          <button style={{ ...styles.btnPrimary, background: 'transparent', color: 'var(--text-warning)', border: '1px solid rgba(212, 169, 52, 0.30)' }}>
+            + Post Requirement
+          </button>
+        </div>
       </div>
 
       <div style={styles.stats}>
@@ -154,7 +189,7 @@ export default function Personnel() {
       </div>
 
       <div style={styles.filterRow}>
-        {FILTERS.map((f) => (
+        {filterChips.map((f) => (
           <button
             key={f.key}
             onClick={() => setFilter(f.key)}
@@ -181,6 +216,12 @@ export default function Personnel() {
       )}
 
       {hired && <HireModal contractor={hired} onClose={() => setHired(null)} />}
+      {addOpen && (
+        <AddCrewModal
+          onClose={() => setAddOpen(false)}
+          onSubmit={handleCrewCreated}
+        />
+      )}
     </div>
   );
 }

@@ -423,6 +423,7 @@ export type Database = {
           aircraft_category: Database["public"]["Enums"]["aircraft_category"]
           available: boolean
           created_at: string
+          created_by_operator: string | null
           discipline: Database["public"]["Enums"]["sacaa_discipline"]
           endorsements: string[]
           expires: string | null
@@ -447,6 +448,7 @@ export type Database = {
           aircraft_category?: Database["public"]["Enums"]["aircraft_category"]
           available?: boolean
           created_at?: string
+          created_by_operator?: string | null
           discipline: Database["public"]["Enums"]["sacaa_discipline"]
           endorsements?: string[]
           expires?: string | null
@@ -471,6 +473,7 @@ export type Database = {
           aircraft_category?: Database["public"]["Enums"]["aircraft_category"]
           available?: boolean
           created_at?: string
+          created_by_operator?: string | null
           discipline?: Database["public"]["Enums"]["sacaa_discipline"]
           endorsements?: string[]
           expires?: string | null
@@ -736,6 +739,7 @@ export type Database = {
           aircraft_category: Database["public"]["Enums"]["aircraft_category"] | null
           available: boolean | null
           created_at: string | null
+          created_by_operator: string | null
           discipline: Database["public"]["Enums"]["sacaa_discipline"] | null
           endorsements: string[] | null
           id: string | null
