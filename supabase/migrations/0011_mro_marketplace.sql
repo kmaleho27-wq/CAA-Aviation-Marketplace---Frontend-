@@ -133,11 +133,16 @@ $$;
 grant execute on function public.request_mro_quote(uuid, text) to authenticated;
 
 -- ── Seed data ───────────────────────────────────────────────────
--- Three demo services owned by the supplier@naluka.aero seed user
--- (already an AMO-equivalent in dev). Skipped if seed user not present.
+-- Demo services. Tries supplier@naluka.aero first (real AMO seed if
+-- present), then falls back to admin@naluka.aero so the marketplace
+-- has visible rows in dev/demo projects. Skipped only if neither
+-- exists (e.g. brand-new clone before seed-supabase.mjs runs).
 do $$
 declare
-  v_amo uuid := (select id from public.profile where email = 'supplier@naluka.aero' limit 1);
+  v_amo uuid := coalesce(
+    (select id from public.profile where email = 'supplier@naluka.aero' limit 1),
+    (select id from public.profile where email = 'admin@naluka.aero'    limit 1)
+  );
 begin
   if v_amo is null then return; end if;
 
