@@ -120,6 +120,79 @@
   --topbar-height: 52px;
 }
 
+/* ─── Light theme override ─────────────────────────
+ * Activated by setting `data-theme="light"` on the <html> element.
+ * Brand colors (mustard, sage, rust, red) stay constant — only the
+ * neutral surfaces, text, and borders flip. Status badge backgrounds
+ * get higher alpha so they read against white.
+ *
+ * Decision rationale: aviation B2B users alternate between bright
+ * hangars (light theme readable) and 2am cockpits (dark theme
+ * readable). Both must work without losing the brand identity that
+ * mustard-on-navy gives us.
+ */
+[data-theme="light"] {
+  /* Color primitives we don't touch — brand identity stays:
+     mustard / sage / rust / red are the same values as dark theme. */
+
+  /* Surfaces — flip to whites + light grays */
+  --surface-base:      #FFFFFF;
+  --surface-sidebar:   #F8F7F2;        /* warm off-white, complements mustard */
+  --surface-raised:    #FAFAF7;
+  --surface-card:      #FFFFFF;
+  --surface-input:     #F5F4EE;
+  --surface-hover:     rgba(15, 26, 51, 0.04);
+
+  /* Borders — light mode needs darker borders to be visible */
+  --border-subtle:     rgba(15, 26, 51, 0.08);
+  --border-default:    rgba(15, 26, 51, 0.14);
+  --border-strong:     rgba(15, 26, 51, 0.22);
+
+  /* Text — navy on light, with hierarchy */
+  --text-primary:      #0E1530;        /* navy-900, near-black */
+  --text-secondary:    #243861;        /* navy-700 */
+  --text-tertiary:     #5A5240;        /* sand-600 */
+  --text-overline:     #847B66;        /* sand-400 */
+  --text-accent:       #B8860D;        /* darker mustard for AA contrast on white */
+  --text-success:      #2F7D60;        /* darker sage for contrast */
+  --text-warning:      #B8860D;        /* same as accent — warm action color */
+  --text-danger:       #B83838;        /* darker red */
+  --text-aog:          #C4421E;        /* rust stays roughly same — it's the alarm color */
+
+  /* Actions — mustard button now has dark text on light bg */
+  --action-primary-text: #FFFFFF;       /* on mustard button background */
+
+  /* Status badges — bump alpha so they're visible on white */
+  --status-verified-bg:     rgba(58, 138, 110, 0.14);
+  --status-verified-text:   #2F7D60;
+  --status-verified-border: rgba(58, 138, 110, 0.35);
+
+  --status-expiring-bg:     rgba(212, 169, 52, 0.18);
+  --status-expiring-text:   #8B6E1F;
+  --status-expiring-border: rgba(212, 169, 52, 0.45);
+
+  --status-expired-bg:      rgba(184, 56, 56, 0.10);
+  --status-expired-text:    #B83838;
+  --status-expired-border:  rgba(184, 56, 56, 0.30);
+
+  --status-aog-bg:          rgba(196, 66, 30, 0.12);
+  --status-aog-text:        #B83C18;
+  --status-aog-border:      rgba(196, 66, 30, 0.40);
+
+  /* Shadows — softer on light because they sit on white not navy */
+  --shadow-sm: 0 1px 2px rgba(15, 26, 51, 0.06);
+  --shadow-md: 0 4px 12px rgba(15, 26, 51, 0.08);
+  --shadow-lg: 0 8px 24px rgba(15, 26, 51, 0.10);
+  --glow-mustard: 0 0 16px rgba(212, 169, 52, 0.18);
+  --glow-aog:     0 0 16px rgba(196, 66, 30, 0.22);
+}
+
+/* Native form controls (selects, inputs, etc.) inherit the theme so
+ * the light/dark scheme is consistent with what the app renders.
+ * Without this, dropdowns can render dark in light mode on Chromium. */
+:root { color-scheme: dark; }
+[data-theme="light"] { color-scheme: light; }
+
 /* ─── Animations ─────────────────────────────────── */
 @keyframes pulse {
   0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(196, 66, 30, 0.5); }

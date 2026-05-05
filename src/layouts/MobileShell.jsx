@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import ContractorSidebar from '../components/ContractorSidebar';
 import { ToastProvider } from '../lib/toast';
+import { ThemeToggle } from '../lib/theme';
 
 // MobileShell — sidebar+main on desktop, drawer-toggle on mobile.
 //
@@ -81,6 +82,7 @@ export default function MobileShell() {
             <div style={styles.brand}>
               Nalu<span style={{ color: 'var(--text-warning)' }}>ka</span>
             </div>
+            <ThemeToggle size={44} />
           </header>
 
           <main style={styles.main} onClick={drawerOpen ? close : undefined}>
@@ -131,6 +133,7 @@ const styles = {
     padding: 0,
   },
   brand: {
+    flex: 1,
     fontFamily: 'var(--font-display)',
     fontSize: 18,
     color: 'var(--text-primary)',

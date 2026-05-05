@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import AdminSidebar from '../components/AdminSidebar';
 import AdminTopBar from '../components/AdminTopBar';
 import { ToastProvider } from '../lib/toast';
+import { ThemeToggle } from '../lib/theme';
 
 // Admin shell — same drawer pattern as AppShell + MobileShell.
 // Admins are usually at desks, but a quick check on the phone for an
@@ -68,6 +69,7 @@ export default function AdminShell() {
               Nalu<span style={{ color: 'var(--text-warning)' }}>ka</span>
               <span style={styles.adminTag}>Admin</span>
             </div>
+            <ThemeToggle size={44} />
           </header>
 
           <div className="admin-desktop-topbar">

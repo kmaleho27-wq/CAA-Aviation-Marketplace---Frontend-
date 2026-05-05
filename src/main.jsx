@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 import './index.css'
 import { initSentry, SentryErrorBoundary } from './lib/sentry'
+import { ThemeProvider } from './lib/theme.jsx'
 
 // Initialise Sentry before React mounts so errors during the very
 // first render (e.g. broken imports, missing globals) are captured.
@@ -72,8 +73,10 @@ function CrashFallback({ error, resetError }) {
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <SentryErrorBoundary fallback={CrashFallback}>
-      <App />
-    </SentryErrorBoundary>
+    <ThemeProvider>
+      <SentryErrorBoundary fallback={CrashFallback}>
+        <App />
+      </SentryErrorBoundary>
+    </ThemeProvider>
   </React.StrictMode>
 )

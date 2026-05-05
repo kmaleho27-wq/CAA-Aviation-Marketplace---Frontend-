@@ -6,6 +6,7 @@ import NotifPanel from '../components/NotifPanel';
 import { ToastProvider } from '../lib/toast';
 import { listNotifications, markAllRead } from '../api/notifications';
 import { getAogEvents } from '../api/dashboard';
+import { ThemeToggle } from '../lib/theme';
 
 // Operator + AMO + Supplier shell. Mobile drawer pattern matches
 // MobileShell — sidebar collapses < 700px, hamburger toggles.
@@ -95,6 +96,7 @@ export default function AppShell() {
             <div style={styles.brand}>
               Nalu<span style={{ color: 'var(--text-warning)' }}>ka</span>
             </div>
+            <ThemeToggle size={44} />
             <button
               type="button"
               onClick={toggleNotif}

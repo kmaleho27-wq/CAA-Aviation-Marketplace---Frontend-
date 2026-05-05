@@ -1,5 +1,6 @@
 import { Link, NavLink } from 'react-router-dom';
 import { isTokenValid } from '../../lib/auth';
+import { ThemeToggle } from '../../lib/theme';
 
 export default function MarketingNav() {
   const authed = isTokenValid();
@@ -25,6 +26,7 @@ export default function MarketingNav() {
       </ul>
 
       <div style={styles.cta}>
+        <ThemeToggle size={32} />
         {authed ? (
           <Link to="/app/dashboard" style={styles.primary}>Open Dashboard →</Link>
         ) : (
