@@ -212,6 +212,89 @@ select count(*) from public.personnel_credential_expiry_alert
 
 ---
 
+## Test 7 — Operator compliance dashboard
+
+**Goal:** confirm the compliance page rolls up primary + secondary
+credentials + documents into the right stat cards and crew table.
+
+**Setup needed:** sign in as an operator who has at least one crew
+member added via `+ Add` on the Crew page (so `created_by_operator`
+is set). Even better: add 2–3 crew members and give one an expiring
+secondary credential from earlier tests.
+
+1. Sign in as the operator. In the sidebar, click **Compliance**
+   (with the new shield+check icon).
+2. Page should load at `/app/compliance`.
+3. ✅ Expect 4 stat cards across the top:
+   - **Verified %** — proportion whose primary + all credentials +
+     all documents are `verified`. Green if ≥80%, amber if ≥50%,
+     red below.
+   - **At risk (≤30 days)** — crew with anything expiring within 30
+     days OR already in `expiring`/`expired` status.
+   - **Expired** — crew where any credential or document has lapsed.
+   - **Pending verification** — crew awaiting Naluka admin review.
+4. ✅ Crew table sorted **at-risk first**, then by earliest expiry.
+   So the most urgent person is at the top.
+5. ✅ Each row shows:
+   - Initials avatar
+   - Name
+   - Primary discipline (e.g. "Pilot")
+   - Secondary disciplines in green ("+ AME · DAME") when the crew
+     member has verified secondaries
+   - Document count ("· 3 docs") when documents exist
+   - Status pill (Verified / Expiring / Expired / Pending / Action needed)
+   - Earliest expiry date
+   - "Time left" column ("12d", "45d ago") with colour coding
+
+### Test 7a — Hired contractor inclusion
+
+If you've hired a contractor via the marketplace and the transaction
+is in `in-escrow` or `rts-pending` status:
+
+1. The hired contractor should appear in your crew table.
+2. ✅ Their name has a small mustard "**Hired**" badge next to it.
+3. ✅ The footer at the bottom shows the count:
+   "5 crew members (1 hired) · naluka.aero"
+
+The "Hired" badge tells you visually that this person isn't your
+direct crew — they're on a contract — but you have visibility for
+the duration of the engagement.
+
+### Test 7b — Documents factored in
+
+If a crew member has a document (medical, Form 21, etc.) with
+`expires` set in the next 30 days, OR with status `expiring` /
+`expired`:
+
+1. ✅ That crew member appears in the at-risk count.
+2. ✅ The earliest-expiry column shows the document's expiry if
+   it's earlier than any credential expiry.
+3. ✅ The status pill flips appropriately.
+
+### Test 7c — Print/Save PDF
+
+1. Click **Print / Save PDF** in the top right.
+2. ✅ The browser's print dialog opens.
+3. ✅ The button itself **does not appear** in the print preview
+   (it has the `audit-pack-noprint` class).
+4. ✅ The footer shows "Generated [datetime]..." — useful as proof
+   of when the snapshot was taken.
+
+This is the file an operator would email to SACAA when audited:
+"here's our compliance picture as of this date, here's who's at
+risk, here are the action items."
+
+### Test 7d — Empty state
+
+Sign in as an operator with no crew yet (or a fresh test account):
+
+1. Land on `/app/compliance`.
+2. ✅ Empty state shows: "No crew yet — Add crew members from
+   Crew → + Add to start tracking compliance."
+3. ✅ Stat cards do NOT render (only the empty state).
+
+---
+
 ## Cleanup
 
 After testing, leave the test credentials in or delete them — your

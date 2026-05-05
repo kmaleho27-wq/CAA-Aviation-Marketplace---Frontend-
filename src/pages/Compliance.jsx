@@ -72,12 +72,24 @@ function CrewRow({ c }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={styles.avatar}>{c.initials}</div>
           <div style={{ minWidth: 0 }}>
-            <div style={styles.crewName}>{c.name}</div>
+            <div style={styles.crewName}>
+              {c.name}
+              {c.source === 'hired' && (
+                <span style={styles.hiredBadge} title="Active engagement (not your direct crew)">
+                  Hired
+                </span>
+              )}
+            </div>
             <div style={styles.crewSub}>
               {DISCIPLINE_LABEL[c.primaryDiscipline] || c.primaryDiscipline}
               {c.credentials.length > 0 && (
                 <span style={{ color: 'var(--color-sage-500)' }}>
                   {' '}+ {c.credentials.map((d) => DISCIPLINE_LABEL[d.discipline] || d.discipline).join(' · ')}
+                </span>
+              )}
+              {c.documents.length > 0 && (
+                <span style={{ color: 'var(--text-tertiary)' }}>
+                  {' · '}{c.documents.length} doc{c.documents.length === 1 ? '' : 's'}
                 </span>
               )}
             </div>
@@ -118,7 +130,7 @@ export default function Compliance() {
           <div style={styles.overline}>Compliance</div>
           <h1 style={styles.h1}>Crew compliance</h1>
           <div style={styles.sub}>
-            Snapshot of your crew's SACAA credential status. Sorted by urgency — at-risk crew at the top.
+            Snapshot of your crew's SACAA credential status — primary discipline, additional credentials, and on-file documents. Sorted by urgency, at-risk crew at the top.
           </div>
         </div>
         <button onClick={() => window.print()} style={styles.printBtn} className="audit-pack-noprint">
@@ -182,6 +194,7 @@ export default function Compliance() {
             Generated {new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
             {' · '}
             {s.total} crew member{s.total === 1 ? '' : 's'}
+            {s.hiredCount > 0 ? ` (${s.hiredCount} hired)` : ''}
             {' · '}
             naluka.aero
           </div>
@@ -287,7 +300,15 @@ const styles = {
     fontSize: 11, fontWeight: 700,
     flexShrink: 0,
   },
-  crewName: { fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  crewName: { fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 },
+  hiredBadge: {
+    fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase',
+    color: 'var(--text-warning)',
+    background: 'rgba(212, 169, 52, 0.10)',
+    border: '1px solid rgba(212, 169, 52, 0.25)',
+    borderRadius: 'var(--radius-pill)',
+    padding: '1px 6px',
+  },
   crewSub: { fontSize: 11, color: 'var(--text-tertiary)', marginTop: 1 },
   statusPill: {
     fontSize: 10,
