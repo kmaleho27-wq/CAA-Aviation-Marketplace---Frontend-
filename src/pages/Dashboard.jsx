@@ -4,8 +4,26 @@ import { useApi } from '../lib/useApi';
 import { getKpis, getAogEvents } from '../api/dashboard';
 import { listPersonnel } from '../api/personnel';
 import { listTransactions } from '../api/transactions';
+import { getComplianceSummary } from '../api/compliance';
 import { supabase } from '../lib/supabase';
 import { LoadingBlock, ErrorBlock } from '../components/ApiState';
+
+// Pretty labels for raw sacaa_discipline enum values shown on the
+// dashboard's personnel preview table. Matches the labels used in
+// /app/personnel and /app/compliance for visual consistency.
+const DISCIPLINE_LABEL = {
+  flight_crew:      'Pilot',
+  national_pilot:   'NPL',
+  glider_pilot:     'Glider',
+  balloon_pilot:    'Balloon',
+  rpas_pilot:       'RPAS',
+  flight_engineer:  'FE',
+  cabin_crew:       'Cabin',
+  atc:              'ATC',
+  ame:              'AME',
+  aviation_medical: 'DAME',
+  non_licensed:     'Ground',
+};
 
 const STAT_TONES = {
   primary: 'var(--text-primary)',
@@ -51,14 +69,22 @@ function AOGAlert({ reg, location, part, matches, onRespond }) {
   );
 }
 
-function ComplianceRow({ name, license, rating, location, status, expires }) {
-  const s = STATUS_MAP[status];
+function ComplianceRow({ p }) {
+  const s = STATUS_MAP[p.status] || STATUS_MAP.pending;
+  const extraCount = (p.extraDisciplines || []).length;
   return (
     <tr>
-      <td style={styles.td}><span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{name}</span></td>
-      <td style={{ ...styles.td, fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-accent)' }}>{license}</td>
-      <td style={styles.td}>{rating}</td>
-      <td style={styles.td}>{location}</td>
+      <td style={styles.td}>
+        <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{p.name}</span>
+        {extraCount > 0 && (
+          <span style={{ fontSize: 10, color: 'var(--color-sage-500)', marginLeft: 8 }}>
+            + {p.extraDisciplines.map((d) => DISCIPLINE_LABEL[d] || d).join(' · ')}
+          </span>
+        )}
+      </td>
+      <td style={{ ...styles.td, fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-accent)' }}>{p.license || '—'}</td>
+      <td style={styles.td}>{DISCIPLINE_LABEL[p.discipline] || p.discipline}</td>
+      <td style={styles.td}>{p.location || '—'}</td>
       <td style={styles.td}>
         <span
           style={{
@@ -75,8 +101,8 @@ function ComplianceRow({ name, license, rating, location, status, expires }) {
           {s.label}
         </span>
       </td>
-      <td style={{ ...styles.td, fontFamily: 'var(--font-mono)', fontSize: 12, color: expires === '—' ? 'var(--text-overline)' : 'var(--text-secondary)' }}>
-        {expires}
+      <td style={{ ...styles.td, fontFamily: 'var(--font-mono)', fontSize: 12, color: !p.expires ? 'var(--text-overline)' : 'var(--text-secondary)' }}>
+        {p.expires ? new Date(p.expires).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
       </td>
     </tr>
   );
@@ -88,6 +114,9 @@ export default function Dashboard() {
   const aog = useApi(getAogEvents, []);
   const personnel = useApi(() => listPersonnel({ filter: 'All' }), []);
   const txns = useApi(listTransactions, []);
+  // getComplianceSummary returns total=0 for users without crew —
+  // banner gracefully renders nothing in that case.
+  const compliance = useApi(getComplianceSummary, []);
 
   const pendingActions = (txns.data ?? []).filter((t) =>
     t.status === 'rts-pending' || t.status === 'in-escrow',
@@ -151,6 +180,33 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Compliance health banner — only renders for operators with crew.
+          Surfaces at-risk count + verified % so the operator sees the
+          most urgent compliance signal on every login. */}
+      {compliance.data && compliance.data.total > 0 && (
+        <div
+          style={{
+            ...styles.complianceBanner,
+            ...(compliance.data.atRisk30 > 0 ? styles.complianceBannerAlert : styles.complianceBannerHealthy),
+          }}
+          onClick={() => navigate('/app/compliance')}
+        >
+          <div style={styles.complianceLeft}>
+            <div style={styles.complianceTitle}>
+              {compliance.data.atRisk30 > 0
+                ? `${compliance.data.atRisk30} crew member${compliance.data.atRisk30 === 1 ? '' : 's'} at risk in the next 30 days`
+                : `All ${compliance.data.total} crew compliant — ${compliance.data.verifiedPct}% fully verified`}
+            </div>
+            <div style={styles.complianceSub}>
+              {compliance.data.expired > 0 && `${compliance.data.expired} expired · `}
+              {compliance.data.pending > 0 && `${compliance.data.pending} pending verification · `}
+              Click to view full compliance picture
+            </div>
+          </div>
+          <span style={styles.complianceArrow}>→</span>
+        </div>
+      )}
+
       <div style={styles.sectionHeader}>
         <div style={styles.sectionTitle}>
           <span style={styles.aogDot} />
@@ -193,7 +249,7 @@ export default function Dashboard() {
               </tr>
             </thead>
             <tbody>
-              {personnel.data.slice(0, 5).map((p) => <ComplianceRow key={p.id} {...p} />)}
+              {personnel.data.slice(0, 5).map((p) => <ComplianceRow key={p.id} p={p} />)}
             </tbody>
           </table>
         </div>
@@ -413,6 +469,43 @@ const styles = {
   },
   actionArrow: {
     color: 'var(--color-mustard-500)',
+    fontSize: 14,
+    fontWeight: 700,
+    flexShrink: 0,
+  },
+  complianceBanner: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    borderRadius: 'var(--radius-lg)',
+    padding: '12px 16px',
+    marginBottom: 24,
+    cursor: 'pointer',
+    transition: 'background var(--transition-fast)',
+  },
+  complianceBannerAlert: {
+    background: 'rgba(196, 48, 48, 0.06)',
+    border: '1px solid rgba(196, 48, 48, 0.20)',
+    borderLeft: '3px solid var(--text-danger)',
+  },
+  complianceBannerHealthy: {
+    background: 'rgba(58, 138, 110, 0.06)',
+    border: '1px solid rgba(58, 138, 110, 0.20)',
+    borderLeft: '3px solid var(--color-sage-500)',
+  },
+  complianceLeft: { flex: 1, minWidth: 0 },
+  complianceTitle: {
+    fontSize: 13,
+    fontWeight: 600,
+    color: 'var(--text-primary)',
+    marginBottom: 2,
+  },
+  complianceSub: {
+    fontSize: 11,
+    color: 'var(--text-tertiary)',
+  },
+  complianceArrow: {
+    color: 'var(--text-secondary)',
     fontSize: 14,
     fontWeight: 700,
     flexShrink: 0,
