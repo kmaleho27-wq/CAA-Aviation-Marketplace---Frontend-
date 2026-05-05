@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { generateAuditPack } from '../api/auditPack';
 import { useToast } from '../lib/toast';
 import { LoadingBlock } from '../components/ApiState';
@@ -228,27 +228,61 @@ export default function AuditPack() {
             )}
           </div>
 
-          {/* Personnel snapshot */}
+          {/* Personnel snapshot — each row lists primary discipline,
+              then any secondary credentials below so inspectors see the
+              full SACAA-licence picture for multi-licensed crew. */}
           <div style={styles.section} className="audit-pack-section">
-            <div style={styles.sectionLabel} className="audit-pack-section-label">Personnel snapshot ({pack.personnel.length})</div>
+            <div style={styles.sectionLabel} className="audit-pack-section-label">
+              Personnel snapshot ({pack.personnel.length}
+              {pack.personnel.some((p) => (p.credentials?.length ?? 0) > 0)
+                ? ` — incl. ${pack.personnel.reduce((s, p) => s + (p.credentials?.length ?? 0), 0)} additional credential(s)`
+                : ''})
+            </div>
             {pack.personnel.length === 0 ? (
               <div style={styles.empty}>No personnel rows visible to this caller.</div>
             ) : (
               <table style={styles.table} className="audit-pack-table">
                 <thead><tr>
-                  <th style={styles.th}>Name</th><th style={styles.th}>Discipline</th>
-                  <th style={styles.th}>Licence</th><th style={styles.th}>Status</th>
-                  <th style={styles.th}>Expires</th>
+                  <th style={styles.th}>Name</th><th style={styles.th}>Discipline / Credential</th>
+                  <th style={styles.th}>Licence</th><th style={styles.th}>Medical</th>
+                  <th style={styles.th}>Status</th><th style={styles.th}>Expires</th>
                 </tr></thead>
-                <tbody>{pack.personnel.map((p) => (
-                  <tr key={p.id}>
-                    <td style={styles.td}>{p.name}</td>
-                    <td style={styles.td}>{p.discipline ?? '—'}</td>
-                    <td style={styles.tdMono}>{p.license ?? '—'}</td>
-                    <td style={styles.td}>{p.status}</td>
-                    <td style={styles.td}>{fmtDate(p.expires)}</td>
-                  </tr>
-                ))}</tbody>
+                <tbody>{pack.personnel.map((p) => {
+                  const extras = p.credentials ?? [];
+                  return (
+                    <Fragment key={p.id}>
+                      <tr>
+                        <td style={styles.td} rowSpan={1 + extras.length}>{p.name}</td>
+                        <td style={styles.td}>
+                          <strong>{p.discipline ?? '—'}</strong>
+                          {p.licenceSubtype ? ` · ${p.licenceSubtype}` : ''}
+                          <span style={{ fontSize: 9, color: '#666', marginLeft: 6 }}>(primary)</span>
+                        </td>
+                        <td style={styles.tdMono}>{p.license ?? '—'}</td>
+                        <td style={styles.td}>
+                          {p.medicalClass && p.medicalClass !== 'none' ? p.medicalClass.replace('_', ' ') : '—'}
+                        </td>
+                        <td style={styles.td}>{p.status}</td>
+                        <td style={styles.td}>{fmtDate(p.expires)}</td>
+                      </tr>
+                      {extras.map((c) => (
+                        <tr key={c.id}>
+                          <td style={styles.td}>
+                            {c.discipline}
+                            {c.licenceSubtype ? ` · ${c.licenceSubtype}` : ''}
+                            {c.sacaaPart != null ? ` · Part ${c.sacaaPart}` : ''}
+                          </td>
+                          <td style={styles.tdMono}>{c.license ?? '—'}</td>
+                          <td style={styles.td}>
+                            {c.medicalClass && c.medicalClass !== 'none' ? c.medicalClass.replace('_', ' ') : '—'}
+                          </td>
+                          <td style={styles.td}>{c.status}</td>
+                          <td style={styles.td}>{fmtDate(c.expires)}</td>
+                        </tr>
+                      ))}
+                    </Fragment>
+                  );
+                })}</tbody>
               </table>
             )}
           </div>

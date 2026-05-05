@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { useApi } from '../lib/useApi';
 import { getComplianceSummary } from '../api/compliance';
 import { LoadingBlock, ErrorBlock } from '../components/ApiState';
@@ -113,6 +114,7 @@ function CrewRow({ c }) {
 
 export default function Compliance() {
   const query = useApi(getComplianceSummary, []);
+  const navigate = useNavigate();
 
   if (query.loading && !query.data) {
     return <div style={styles.page}><LoadingBlock label="Loading compliance picture…" /></div>;
@@ -133,9 +135,14 @@ export default function Compliance() {
             Snapshot of your crew's SACAA credential status — primary discipline, additional credentials, and on-file documents. Sorted by urgency, at-risk crew at the top.
           </div>
         </div>
-        <button onClick={() => window.print()} style={styles.printBtn} className="audit-pack-noprint">
-          Print / Save PDF
-        </button>
+        <div style={{ display: 'flex', gap: 8 }} className="audit-pack-noprint">
+          <button onClick={() => navigate('/app/audit-pack')} style={styles.auditBtn}>
+            Generate audit pack →
+          </button>
+          <button onClick={() => window.print()} style={styles.printBtn}>
+            Print / Save PDF
+          </button>
+        </div>
       </div>
 
       {s.total === 0 ? (
@@ -235,6 +242,17 @@ const styles = {
     background: 'var(--action-primary)',
     color: 'var(--action-primary-text)',
     border: 'none',
+    borderRadius: 'var(--radius-md)',
+    padding: '8px 16px',
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+  },
+  auditBtn: {
+    background: 'transparent',
+    color: 'var(--text-secondary)',
+    border: '1px solid var(--border-default)',
     borderRadius: 'var(--radius-md)',
     padding: '8px 16px',
     fontSize: 13,
