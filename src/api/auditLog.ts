@@ -1,9 +1,12 @@
 import { supabase, snakeToCamel } from '../lib/supabase';
 
 export interface AuditEvent {
-  id: string;
-  seq: number;
-  type: string;
+  // Note: server returns event_id / event_seq / event_type to avoid
+  // OUT-parameter ambiguity in the underlying RPC (migration 0022b).
+  // snakeToCamel converts to eventId / eventSeq / eventType for callers.
+  eventId: string;
+  eventSeq: number;
+  eventType: string;
   subjectId: string;
   actorId: string | null;
   payload: Record<string, unknown>;

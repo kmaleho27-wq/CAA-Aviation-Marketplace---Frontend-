@@ -73,8 +73,8 @@ export default function AuditLog() {
     setVerifying(true);
     setProof(null);
     try {
-      const minSeq = Math.min(...events.map((e) => e.seq));
-      const maxSeq = Math.max(...events.map((e) => e.seq));
+      const minSeq = Math.min(...events.map((e) => e.eventSeq));
+      const maxSeq = Math.max(...events.map((e) => e.eventSeq));
       const result = await verifyChainSegment(minSeq, maxSeq);
       setProof(result);
       toast.success(result.valid ? 'Chain segment verified ✓' : 'Chain integrity FAILED');
@@ -87,8 +87,8 @@ export default function AuditLog() {
 
   const onCopyProof = () => {
     if (!proof) return;
-    const minSeq = Math.min(...events.map((e) => e.seq));
-    const maxSeq = Math.max(...events.map((e) => e.seq));
+    const minSeq = Math.min(...events.map((e) => e.eventSeq));
+    const maxSeq = Math.max(...events.map((e) => e.eventSeq));
     const summary = `Naluka audit chain segment proof
 Range:           seq ${minSeq} → ${maxSeq}
 Rows checked:    ${proof.rowsChecked}
@@ -175,10 +175,10 @@ request a global verify_chain() result from a Naluka admin.`;
           </thead>
           <tbody>
             {events.map((e) => {
-              const tone = TYPE_LABEL[e.type] || { label: e.type, color: 'var(--text-secondary)' };
+              const tone = TYPE_LABEL[e.eventType] || { label: e.eventType, color: 'var(--text-secondary)' };
               return (
-                <tr key={e.id} style={styles.tr}>
-                  <td style={styles.tdMono}>{e.seq}</td>
+                <tr key={e.eventId} style={styles.tr}>
+                  <td style={styles.tdMono}>{e.eventSeq}</td>
                   <td style={{ ...styles.td, color: tone.color, fontWeight: 600 }}>{tone.label}</td>
                   <td style={styles.tdMono}>{e.subjectId.slice(0, 16)}{e.subjectId.length > 16 ? '…' : ''}</td>
                   <td style={styles.td}>{fmtDateTime(e.createdAt)}</td>
