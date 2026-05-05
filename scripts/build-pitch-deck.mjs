@@ -89,9 +89,9 @@ let pageNum = 0;
     fontSize: 32, bold: true, fontFace: HEADER_FONT, margin: 0,
   });
 
-  // Subtitle ribbon
+  // Subtitle ribbon — wide enough to stay on one line at charSpacing 8
   slide.addText('AFRICAN AVIATION  ·  COMPLIANCE  ·  ESCROW', {
-    x: 0.6, y: 1.25, w: 6, h: 0.3,
+    x: 0.6, y: 1.25, w: 8.5, h: 0.3,
     fontSize: 10, bold: true, color: GOLD,
     charSpacing: 8, fontFace: BODY_FONT, margin: 0,
   });
@@ -305,10 +305,9 @@ let pageNum = 0;
     });
   });
 
-  slide.addText('(Stats illustrative — replace with current SACAA report numbers before each call.)', {
-    x: 0.5, y: H - 0.5, w: 9, h: 0.3,
-    fontSize: 9, italic: true, color: CREAM_DIM, fontFace: BODY_FONT, margin: 0,
-  });
+  // (Replace these stats with current SACAA report numbers before each
+  // call — keep that note in build-pitch-deck.mjs, NOT on the customer
+  // slide.)
 
   pageNumber(slide, pageNum, TOTAL);
 }
@@ -378,11 +377,11 @@ let pageNum = 0;
   title(slide, 'Five steps. Audit-ready by step five.');
 
   const steps = [
-    { n: '1', t: 'Sign up your team',           b: 'CSV upload bulks 200 pilots in 30 sec. Or each member self-registers.' },
-    { n: '2', t: 'We verify each member',       b: 'Manual verification within 4 business hours. Once verified, listed and bookable.' },
-    { n: '3', t: 'Hire / procure',              b: 'Hire a contractor or buy a part. Money lands in PayFast escrow.' },
-    { n: '4', t: 'Work happens',                b: 'When complete, the licensed signatory signs off via biometric auth.' },
-    { n: '5', t: 'Money releases',              b: 'Funds released to seller. Audit chain entry written. Done.' },
+    { n: '1', t: 'Sign up team',     b: 'CSV upload bulks 200 pilots in 30 sec. Or each member self-registers.' },
+    { n: '2', t: 'Verify',            b: 'Manual SACAA cross-check within 4 business hours. Verified = listed + bookable.' },
+    { n: '3', t: 'Hire / procure',    b: 'Hire a contractor or buy a part. Money lands in PayFast escrow.' },
+    { n: '4', t: 'Work happens',      b: 'When complete, the licensed signatory signs off via biometric auth.' },
+    { n: '5', t: 'Money releases',    b: 'Funds released to seller. Audit chain entry written. Done.' },
   ];
 
   const startY = 2.0;
@@ -530,10 +529,10 @@ let pageNum = 0;
     },
   ];
 
-  const cardW = 2.95, cardH = 3.0, gap = 0.1;
+  const cardW = 2.95, cardH = 2.95, gap = 0.1;
   tiers.forEach((t, i) => {
     const x = 0.5 + i * (cardW + gap);
-    const y = 1.95;
+    const y = 2.25;        // dropped from 1.95 to clear room for the ribbon
     const fill = t.featured ? { color: GOLD } : { color: NAVY_RAISED };
     const stroke = t.featured ? { color: GOLD, width: 2 } : { color: BORDER, width: 1 };
     const tx = t.featured ? NAVY : CREAM;
@@ -541,11 +540,12 @@ let pageNum = 0;
 
     slide.addShape(pres.shapes.RECTANGLE, { x, y, w: cardW, h: cardH, fill, line: stroke });
 
-    // Featured ribbon
+    // Featured ribbon — sits between the title bar (ends ~1.75) and
+    // the card top (now 2.25). Centred in the 0.5" band.
     if (t.featured) {
       slide.addText('MOST POPULAR', {
-        x, y: y - 0.18, w: cardW, h: 0.3,
-        fontSize: 9, bold: true, color: GOLD, charSpacing: 3,
+        x, y: 1.85, w: cardW, h: 0.3,
+        fontSize: 10, bold: true, color: GOLD, charSpacing: 4,
         align: 'center', fontFace: BODY_FONT, margin: 0,
       });
     }
