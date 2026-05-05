@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useApi } from '../lib/useApi';
-import { listPersonnel, createPersonnelByOperator } from '../api/personnel';
+import { listPersonnel, createPersonnelByOperator, exportPersonnelCsv } from '../api/personnel';
 import { LoadingBlock, ErrorBlock } from '../components/ApiState';
 import HireModal from '../components/HireModal';
 import AddCrewModal from '../components/AddCrewModal';
@@ -147,6 +147,15 @@ export default function Personnel() {
   const filtered = query.data || [];
   const activeFilterLabel = filterChips.find((f) => f.key === filter)?.label ?? filter;
 
+  const handleExportCsv = async () => {
+    try {
+      const count = await exportPersonnelCsv();
+      toast.success(`Exported ${count} crew member${count === 1 ? '' : 's'} to CSV`);
+    } catch (err) {
+      toast.error(err.message || 'Could not export CSV.');
+    }
+  };
+
   const handleCrewCreated = async (payload) => {
     try {
       await createPersonnelByOperator(payload);
@@ -176,6 +185,13 @@ export default function Personnel() {
                 title="Upload a CSV to add multiple crew at once"
               >
                 ⬆ Bulk import
+              </button>
+              <button
+                onClick={handleExportCsv}
+                style={{ ...styles.btnPrimary, background: 'transparent', color: 'var(--text-tertiary)', border: '1px solid var(--border-default)' }}
+                title="Download a SACAA-inspection-ready CSV of your crew"
+              >
+                ⬇ Export CSV
               </button>
             </>
           )}

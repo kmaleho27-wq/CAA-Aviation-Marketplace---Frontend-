@@ -72,7 +72,8 @@ verify_jwt = false  # called by pg_cron with x-cron-secret
 [functions.send-welcome-email]
 verify_jwt = false  # called by approve_personnel RPC via pg_net with x-cron-secret
 
-# ── Deprecated (Stripe-flavored, kept deployed but unreachable from app) ──
-# [functions.stripe-webhook]
-# [functions.payments-create-intent]
-# [functions.stripe-onboard-return]
+# Stripe scaffolding (stripe-webhook, payments-create-intent,
+# stripe-onboard-return) was deleted in commit "cleanup Stripe
+# scaffolding" — Naluka's payment provider is PayFast for ZAR. If we
+# add Stripe for international currencies in Tier 2, recreate the
+# Edge Functions then.

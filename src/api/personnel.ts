@@ -60,6 +60,55 @@ export async function listPersonnel(opts: PersonnelFilter = {}) {
 }
 
 /**
+ * Export the operator's full crew (incl. licence + medical + endorsements)
+ * as a CSV file for SACAA inspection prep. Triggers a browser download.
+ *
+ * Pulls from the unmasked `personnel` table — RLS gates which rows the
+ * caller can see (own + admin + counterparty + created_by_operator).
+ */
+export async function exportPersonnelCsv() {
+  const { data, error } = await supabase
+    .from('personnel')
+    .select('name, license, discipline, sacaa_part, licence_subtype, role, rating, types, location, status, expires, available, rate, medical_class, endorsements, non_licensed_role, created_at')
+    .order('discipline')
+    .order('name');
+  if (error) throw error;
+
+  const rows = data ?? [];
+  if (rows.length === 0) {
+    throw new Error('No crew rows to export.');
+  }
+
+  const headers = Object.keys(rows[0]);
+  const csv = [
+    headers.join(','),
+    ...rows.map((r) => headers.map((h) => csvCell(r[h])).join(',')),
+  ].join('\n');
+
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const ymd = new Date().toISOString().slice(0, 10);
+  a.download = `naluka-crew-${ymd}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  return rows.length;
+}
+
+/** Escape a value for CSV — quote if it contains comma/quote/newline. */
+function csvCell(v: unknown): string {
+  if (v == null) return '';
+  if (Array.isArray(v)) return csvCell(v.join('; '));
+  const s = String(v);
+  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+/**
  * Operator creates a personnel row on behalf of their crew (P2 #6).
  * Row lands at status='pending' with user_id=null (no auth account)
  * and created_by_operator=auth.uid(). Admins verify it like any other
