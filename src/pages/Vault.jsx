@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useApi } from '../lib/useApi';
 import { listDocuments } from '../api/documents';
 import { LoadingBlock, ErrorBlock } from '../components/ApiState';
@@ -127,7 +128,9 @@ export default function Vault() {
           <h1 style={styles.h1}>Compliance Vault</h1>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button style={styles.btnGhost}>Import Document</button>
+          <Link to="/app/audit-pack" style={{ ...styles.btnGhost, textDecoration: 'none' }}>
+            📋 Audit Pack
+          </Link>
           <button style={styles.btnPrimary}>+ Upload Certificate</button>
         </div>
       </div>

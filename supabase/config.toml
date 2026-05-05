@@ -69,6 +69,9 @@ verify_jwt = false  # called by pg_cron with x-cron-secret
 [functions.expiry-sweep]
 verify_jwt = false  # called by pg_cron with x-cron-secret
 
+[functions.send-welcome-email]
+verify_jwt = false  # called by approve_personnel RPC via pg_net with x-cron-secret
+
 # ── Deprecated (Stripe-flavored, kept deployed but unreachable from app) ──
 # [functions.stripe-webhook]
 # [functions.payments-create-intent]

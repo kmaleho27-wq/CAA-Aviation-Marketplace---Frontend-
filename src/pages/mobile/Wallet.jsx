@@ -1,6 +1,7 @@
 import { useApi } from '../../lib/useApi';
 import { getWallet } from '../../api/contractor';
 import { LoadingBlock, ErrorBlock } from '../../components/ApiState';
+import OnboardingChecklist from '../../components/OnboardingChecklist';
 
 const STATUS_TONE = {
   verified: { bg: 'rgba(58, 138, 110, 0.12)', color: 'var(--color-sage-500)', border: 'rgba(58, 138, 110, 0.25)', label: '✓ Verified' },
@@ -22,6 +23,7 @@ export default function Wallet() {
 
   return (
     <div style={styles.scroll}>
+      <OnboardingChecklist />
       <div style={styles.hero}>
         <div style={styles.heroOrb} />
         <div style={styles.overline}>Digital Crew Wallet</div>
