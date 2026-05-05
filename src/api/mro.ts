@@ -62,10 +62,104 @@ export async function createMroService(payload: {
 }
 
 export async function requestMroQuote(serviceId: string, message?: string) {
-  const { data, error } = await supabase.rpc('request_mro_quote', {
+  // Uses the v2 RPC which creates a proper mro_quote row (and notif)
+  // instead of the v1 RPC which only fired a notification. Backward
+  // compatible — same caller signature.
+  const { data, error } = await supabase.rpc('request_mro_quote_v2', {
     p_service_id: serviceId,
     p_message: message || null,
   });
+  if (error) throw error;
+  return { quoteId: data as string };
+}
+
+// ── MRO escrow flow (migration 0019) ────────────────────────────
+
+export interface MroQuote {
+  id: string;
+  serviceId: string;
+  operatorId: string;
+  amoId: string;
+  message: string | null;
+  amountQuoted: string | null;
+  amoNotes: string | null;
+  status: 'requested' | 'quoted' | 'accepted' | 'escrowed' | 'work_complete' | 'released' | 'declined' | 'cancelled';
+  transactionId: string | null;
+  createdAt: string;
+  service?: { name: string; category: string; location: string };
+  operator?: { name: string; email: string };
+  amo?: { name: string; email: string };
+}
+
+/** Lists quotes visible to the caller — operators see their own
+ *  outgoing requests, AMOs see incoming. RLS gates by user role. */
+export async function listMroQuotes() {
+  const { data, error } = await supabase
+    .from('mro_quote')
+    .select('*, service:service_id(name, category, location), operator:operator_id(name, email), amo:amo_id(name, email)')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return snakeToCamel(data) as MroQuote[];
+}
+
+/** AMO responds to a quote with a price. */
+export async function respondMroQuote(quoteId: string, amount: string, notes?: string) {
+  const { data, error } = await supabase.rpc('respond_mro_quote', {
+    p_quote_id: quoteId, p_amount: amount, p_notes: notes || null,
+  });
+  if (error) throw error;
+  return snakeToCamel(data);
+}
+
+/** Operator declines a quote. */
+export async function declineMroQuote(quoteId: string, reason?: string) {
+  const { data, error } = await supabase.rpc('decline_mro_quote', {
+    p_quote_id: quoteId, p_reason: reason || null,
+  });
+  if (error) throw error;
+  return snakeToCamel(data);
+}
+
+/** Operator accepts a quote → triggers PayFast escrow checkout.
+ *  Returns the PayFast checkoutUrl which the caller redirects to. */
+export async function acceptMroQuote(quoteId: string) {
+  // Fetch the quote to get its quoted amount + service for the txn description.
+  const { data: q, error: qErr } = await supabase
+    .from('mro_quote')
+    .select('id, amount_quoted, status, service:service_id(name, location), amo:amo_id(name)')
+    .eq('id', quoteId)
+    .single();
+  if (qErr) throw qErr;
+  if (q.status !== 'quoted') throw new Error(`Quote not in "quoted" status (was ${q.status})`);
+  if (!q.amount_quoted) throw new Error('Quote has no amount yet');
+
+  // Reach into payfast-create-payment with kind:'mro'. The Edge
+  // Function uses the quote_id as both the m_payment_id link and to
+  // fire mark_mro_quote_accepted on success.
+  const { data, error } = await supabase.functions.invoke('payfast-create-payment', {
+    body: {
+      kind: 'mro',
+      mroQuoteId: quoteId,
+      amount: q.amount_quoted,
+      item: q.service.name,
+      party: q.amo.name,
+      location: q.service.location,
+    },
+  });
+  if (error) throw error;
+  return snakeToCamel(data);
+}
+
+/** AMO marks the work complete; sends operator a "confirm + release" prompt. */
+export async function markMroWorkComplete(quoteId: string) {
+  const { data, error } = await supabase.rpc('mark_mro_work_complete', { p_quote_id: quoteId });
+  if (error) throw error;
+  return snakeToCamel(data);
+}
+
+/** Operator confirms the work and releases the escrow. */
+export async function releaseMroEscrow(quoteId: string) {
+  const { data, error } = await supabase.rpc('release_mro_escrow', { p_quote_id: quoteId });
   if (error) throw error;
   return snakeToCamel(data);
 }

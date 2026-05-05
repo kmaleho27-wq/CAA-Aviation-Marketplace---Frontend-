@@ -1,9 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useApi } from '../lib/useApi';
-import { listMroServices, requestMroQuote } from '../api/mro';
+import {
+  listMroServices, requestMroQuote, createMroService,
+  listMroQuotes, respondMroQuote, declineMroQuote,
+  acceptMroQuote, markMroWorkComplete, releaseMroEscrow,
+} from '../api/mro';
 import { LoadingBlock, ErrorBlock } from '../components/ApiState';
 import { useToast } from '../lib/toast';
 import { getUser } from '../lib/auth';
+import ListMroServiceModal from '../components/ListMroServiceModal';
+import MroQuotesPanel from '../components/MroQuotesPanel';
 
 const CATEGORIES = [
   { key: 'all',             label: 'All' },
@@ -73,6 +79,7 @@ function ServiceCard({ s, onQuote, busy }) {
 export default function Mro() {
   const [category, setCategory] = useState('all');
   const [busyId, setBusyId] = useState(null);
+  const [listOpen, setListOpen] = useState(false);
   const toast = useToast();
   const authUser = getUser();
   const isAmo = authUser?.role === 'AMO' || authUser?.role === 'ADMIN';
@@ -94,6 +101,17 @@ export default function Mro() {
     }
   };
 
+  const onListService = async (payload) => {
+    try {
+      await createMroService(payload);
+      toast.success(`${payload.name} listed — pending admin verification`);
+      setListOpen(false);
+      query.refetch();
+    } catch (err) {
+      toast.error(err.message || 'Could not list service.');
+    }
+  };
+
   return (
     <div style={styles.page}>
       <div style={styles.header}>
@@ -103,11 +121,14 @@ export default function Mro() {
           <div style={styles.sub}>Request quotes from Part 145 AMOs across the continent.</div>
         </div>
         {isAmo && (
-          <button style={styles.btnPrimary} title="AMO listing flow lands in next sprint">
+          <button onClick={() => setListOpen(true)} style={styles.btnPrimary}>
             + List a service
           </button>
         )}
       </div>
+
+      {/* Quotes panel — visible to anyone with quotes (RLS gates rows). */}
+      <MroQuotesPanel />
 
       <div style={styles.filterRow}>
         {CATEGORIES.map((c) => (
@@ -136,6 +157,10 @@ export default function Mro() {
             <ServiceCard key={s.id} s={s} onQuote={onQuote} busy={busyId === s.id} />
           ))}
         </div>
+      )}
+
+      {listOpen && (
+        <ListMroServiceModal onClose={() => setListOpen(false)} onSubmit={onListService} />
       )}
     </div>
   );

@@ -7,6 +7,7 @@ import {
   listMyPersonnelDocs,
   getPersonnelDocUrl,
 } from '../../api/documents';
+import { downloadMyDataExport, requestAccountDeletion } from '../../api/popi';
 import { supabase } from '../../lib/supabase';
 import { getDocRequirements } from '../../data/document-requirements';
 import { PROFILE_STATS, SETTINGS_ROWS } from '../../data/mobile';
@@ -75,6 +76,9 @@ function ComplianceDocs() {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'application/pdf,image/png,image/jpeg,image/heic,image/webp';
+    // On mobile, prefer the rear camera for snapping a licence card.
+    // Browsers ignore this attribute on desktop, so it's safe to always set.
+    input.setAttribute('capture', 'environment');
     input.onchange = async (e) => {
       const file = e.target.files?.[0];
       if (!file) return;
@@ -254,6 +258,33 @@ export default function Profile() {
     navigate('/login', { replace: true });
   };
 
+  const handleExportData = async () => {
+    try {
+      await downloadMyDataExport();
+      toast.success('Your data export downloaded.');
+    } catch (err) {
+      toast.error(err.message || 'Could not export data.');
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    const ok = window.confirm(
+      'Delete your Naluka account?\n\n' +
+      '• Your profile is anonymised immediately.\n' +
+      '• Crew records retained 90 days for transaction traceability, then hard-purged.\n' +
+      '• You will be signed out and can no longer log in with this email.\n\n' +
+      'This cannot be undone. Continue?'
+    );
+    if (!ok) return;
+    try {
+      const result = await requestAccountDeletion();
+      toast.warning(`Account scheduled for purge after ${result.purge_after.slice(0, 10)}.`);
+      navigate('/', { replace: true });
+    } catch (err) {
+      toast.error(err.message || 'Could not delete account.');
+    }
+  };
+
   return (
     <div style={styles.scroll}>
       <div style={{ textAlign: 'center', marginBottom: 20 }}>
@@ -307,6 +338,21 @@ export default function Profile() {
       ))}
 
       <button onClick={handleLogout} style={styles.signOut}>Sign out</button>
+
+      {/* POPI Act §23 + §24 — right-to-export + right-to-delete. */}
+      <div style={styles.popiBox}>
+        <div style={styles.popiTitle}>Privacy &amp; data (POPI Act)</div>
+        <button onClick={handleExportData} style={styles.popiBtn}>
+          ⬇ Download my data
+        </button>
+        <button onClick={handleDeleteAccount} style={{ ...styles.popiBtn, color: 'var(--text-danger)', borderColor: 'rgba(212, 86, 86, 0.30)' }}>
+          ✕ Delete my account
+        </button>
+        <div style={styles.popiSub}>
+          Crew records are retained 90 days after deletion for transaction
+          traceability, then hard-purged.
+        </div>
+      </div>
     </div>
   );
 }
@@ -421,5 +467,38 @@ const styles = {
     fontWeight: 600,
     cursor: 'pointer',
     marginTop: 14,
+  },
+  popiBox: {
+    marginTop: 16,
+    padding: 12,
+    background: 'rgba(255,255,255,0.03)',
+    border: '1px solid var(--border-subtle)',
+    borderRadius: 10,
+  },
+  popiTitle: {
+    fontSize: 10,
+    fontWeight: 700,
+    letterSpacing: '0.1em',
+    textTransform: 'uppercase',
+    color: 'var(--text-overline)',
+    marginBottom: 10,
+  },
+  popiBtn: {
+    width: '100%',
+    background: 'transparent',
+    border: '1px solid var(--border-default)',
+    color: 'var(--text-secondary)',
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: 'pointer',
+    marginBottom: 6,
+  },
+  popiSub: {
+    fontSize: 10,
+    color: 'var(--text-tertiary)',
+    lineHeight: 1.5,
+    marginTop: 6,
   },
 };

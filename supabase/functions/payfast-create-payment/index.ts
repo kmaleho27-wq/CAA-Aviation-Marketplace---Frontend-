@@ -36,15 +36,22 @@ Deno.serve(async (req) => {
 
   const body = await req.json().catch(() => null);
   if (!body) return error('Invalid JSON body');
-  const { kind, partId, personnelId, idempotencyKey } = body as {
-    kind?: 'parts' | 'personnel';
+  const {
+    kind, partId, personnelId, idempotencyKey,
+    mroQuoteId, amount: bodyAmount, item: bodyItem, party: bodyParty,
+  } = body as {
+    kind?: 'parts' | 'personnel' | 'mro';
     partId?: string;
     personnelId?: string;
-    idempotencyKey?: string;          // optional UUID — caller may supply for retry-safety
+    mroQuoteId?: string;
+    amount?: string;       // for kind='mro' — caller passes the quoted amount
+    item?: string;         // service name for kind='mro'
+    party?: string;        // AMO name for kind='mro'
+    idempotencyKey?: string;
   };
 
-  if (kind !== 'parts' && kind !== 'personnel') {
-    return error('kind must be "parts" or "personnel"');
+  if (kind !== 'parts' && kind !== 'personnel' && kind !== 'mro') {
+    return error('kind must be "parts", "personnel", or "mro"');
   }
 
   const sb = adminClient();
@@ -82,7 +89,7 @@ Deno.serve(async (req) => {
       .from('part').select('*').eq('id', partId).single();
     if (partErr) return error(`Part not found: ${partErr.message}`, 404);
     item = part.name; party = part.supplier; amount = part.price; aog = part.aog;
-  } else {
+  } else if (kind === 'personnel') {
     if (!personnelId) return error('personnelId required when kind=personnel');
     const { data: ppl, error: pplErr } = await sb
       .from('personnel').select('*').eq('id', personnelId).single();
@@ -90,6 +97,19 @@ Deno.serve(async (req) => {
     item = `${ppl.role} — ${ppl.name}`;
     party = ppl.name;
     amount = ppl.rate;
+  } else {
+    // kind === 'mro' — caller passes amount/item/party from the quote
+    if (!mroQuoteId) return error('mroQuoteId required when kind=mro');
+    if (!bodyAmount) return error('amount required when kind=mro');
+    const { data: quote, error: qErr } = await sb
+      .from('mro_quote').select('id, status, amount_quoted, operator_id, amo_id')
+      .eq('id', mroQuoteId).single();
+    if (qErr) return error(`Quote not found: ${qErr.message}`, 404);
+    if (quote.status !== 'quoted') return error(`Quote must be "quoted" status (was ${quote.status})`);
+    if (quote.operator_id !== user.userId) return error('Only the requesting operator can accept', 403);
+    item = bodyItem ?? 'MRO service';
+    party = bodyParty ?? 'AMO';
+    amount = quote.amount_quoted ?? bodyAmount;
   }
 
   const amountZar = parseAmount(amount);
@@ -98,10 +118,11 @@ Deno.serve(async (req) => {
 
   // Create transaction row
   const txnId = makeTxnId();
+  const txnType = kind === 'parts' ? 'Parts' : kind === 'personnel' ? 'Personnel' : 'MRO';
   const { error: txnErr } = await sb.from('transaction').insert({
     id: txnId,
     idempotency_key: ikey,
-    type: kind === 'parts' ? 'Parts' : 'Personnel',
+    type: txnType,
     item, party, amount,
     status: 'in-escrow',
     aog,
@@ -130,6 +151,16 @@ Deno.serve(async (req) => {
       }
     }
     return error(`Failed to create transaction: ${txnErr.message}`, 500);
+  }
+
+  // For MRO, link the quote → transaction so the ITN handler can flip
+  // the quote to 'escrowed' and AMOs see "your work is funded".
+  if (kind === 'mro' && mroQuoteId) {
+    const { error: linkErr } = await sb.rpc('mark_mro_quote_accepted', {
+      p_quote_id: mroQuoteId,
+      p_transaction_id: txnId,
+    });
+    if (linkErr) console.warn('[mro] mark_mro_quote_accepted failed', linkErr.message);
   }
 
   const cfg = payfastConfig();

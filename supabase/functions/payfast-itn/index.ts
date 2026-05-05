@@ -119,6 +119,12 @@ Deno.serve(async (req) => {
     }
     // Also set the pf payment id on the transaction
     await sb.from('transaction').update({ stripe_intent_id: pfPaymentId }).eq('id', txnId);
+
+    // For MRO transactions, advance the linked quote to 'escrowed' so
+    // the AMO sees "funds are in escrow — start work". RPC is a no-op
+    // if the txn isn't linked to an MRO quote.
+    const { error: mroErr } = await sb.rpc('mark_mro_quote_escrowed', { p_transaction_id: txnId });
+    if (mroErr) console.warn('[payfast-itn] mark_mro_quote_escrowed failed:', mroErr.message);
   }
 
   // Always record the event so future deliveries dedupe.
