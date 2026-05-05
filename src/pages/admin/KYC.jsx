@@ -5,7 +5,7 @@ import {
   listPendingPersonnel, approvePersonnel, rejectPersonnel,
 } from '../../api/admin';
 import { listPersonnelDocs, getPersonnelDocUrl } from '../../api/documents';
-import { listPersonnelCredentials } from '../../api/credentials';
+import { listPersonnelCredentials, verifyCredential, rejectCredential } from '../../api/credentials';
 import Badge from '../../components/admin/Badge';
 import { useToast } from '../../lib/toast';
 import { LoadingBlock, ErrorBlock } from '../../components/ApiState';
@@ -44,6 +44,8 @@ function PendingPersonnelCard({ p, onApprove, onReject, busy }) {
   const info = DISCIPLINE_INFO[p.discipline] || { label: p.discipline, part: p.sacaaPart };
   const [uploadedDocs, setUploadedDocs] = useState([]);
   const [extraCreds, setExtraCreds] = useState([]);
+  const [credBusyId, setCredBusyId] = useState(null);
+  const toast = useToast();
 
   useEffect(() => {
     let cancelled = false;
@@ -55,6 +57,34 @@ function PendingPersonnelCard({ p, onApprove, onReject, busy }) {
       .catch(() => { /* personnel row may have no extras */ });
     return () => { cancelled = true; };
   }, [p.id]);
+
+  const handleVerifyCred = async (credId, label) => {
+    setCredBusyId(credId);
+    try {
+      await verifyCredential(credId);
+      setExtraCreds((prev) => prev.map((c) => c.id === credId ? { ...c, status: 'verified' } : c));
+      toast.success(`Verified — ${label}`);
+    } catch (err) {
+      toast.error(err.message || 'Verify failed');
+    } finally {
+      setCredBusyId(null);
+    }
+  };
+
+  const handleRejectCred = async (credId, label) => {
+    const reason = window.prompt(`Reject ${label} — reason (sent to applicant):`, '');
+    if (reason === null) return;
+    setCredBusyId(credId);
+    try {
+      await rejectCredential(credId, reason);
+      setExtraCreds((prev) => prev.map((c) => c.id === credId ? { ...c, status: 'rejected' } : c));
+      toast.warning(`Rejected — ${label}`);
+    } catch (err) {
+      toast.error(err.message || 'Reject failed');
+    } finally {
+      setCredBusyId(null);
+    }
+  };
 
   const openDoc = async (id) => {
     try {
@@ -130,15 +160,44 @@ function PendingPersonnelCard({ p, onApprove, onReject, busy }) {
               <div style={styles.extraCredsLabel}>+ {extraCreds.length} additional credential{extraCreds.length === 1 ? '' : 's'}:</div>
               {extraCreds.map((c) => {
                 const label = DISCIPLINE_INFO[c.discipline]?.label || c.discipline;
+                const isPending = c.status === 'pending';
+                const credBusy = credBusyId === c.id;
                 return (
                   <div key={c.id} style={styles.extraCredRow}>
-                    <strong style={{ color: 'var(--text-primary)' }}>{label}</strong>
-                    {c.license ? <> · <code style={{ color: 'var(--text-warning)' }}>{c.license}</code></> : ''}
-                    {c.licenceSubtype ? ` · ${c.licenceSubtype}` : ''}
-                    {c.medicalClass && c.medicalClass !== 'none' ? ` · ${c.medicalClass.replace('_', ' ')}` : ''}
-                    <span style={{ marginLeft: 8, fontSize: 10, color: c.status === 'verified' ? 'var(--color-sage-500)' : 'var(--text-warning)' }}>
-                      [{c.status}]
-                    </span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <strong style={{ color: 'var(--text-primary)' }}>{label}</strong>
+                      {c.license ? <> · <code style={{ color: 'var(--text-warning)' }}>{c.license}</code></> : ''}
+                      {c.licenceSubtype ? ` · ${c.licenceSubtype}` : ''}
+                      {c.medicalClass && c.medicalClass !== 'none' ? ` · ${c.medicalClass.replace('_', ' ')}` : ''}
+                      <span style={{
+                        marginLeft: 8, fontSize: 10, fontWeight: 700,
+                        color: c.status === 'verified' ? 'var(--color-sage-500)'
+                             : c.status === 'rejected' ? 'var(--text-danger)'
+                             : 'var(--text-warning)',
+                      }}>
+                        [{c.status}]
+                      </span>
+                    </div>
+                    {isPending && (
+                      <div style={styles.credBtnRow}>
+                        <button
+                          onClick={() => handleRejectCred(c.id, label)}
+                          disabled={credBusy}
+                          style={styles.credRejectBtn}
+                          title="Reject this credential"
+                        >
+                          ✕
+                        </button>
+                        <button
+                          onClick={() => handleVerifyCred(c.id, label)}
+                          disabled={credBusy}
+                          style={styles.credVerifyBtn}
+                          title="Verify this credential"
+                        >
+                          ✓
+                        </button>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -540,8 +599,31 @@ const styles = {
     marginBottom: 6,
   },
   extraCredRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
     fontSize: 12,
     color: 'var(--text-secondary)',
     lineHeight: 1.6,
+    padding: '4px 0',
+  },
+  credBtnRow: { display: 'flex', gap: 4, flexShrink: 0 },
+  credVerifyBtn: {
+    width: 28, height: 28,
+    background: 'rgba(58, 138, 110, 0.15)',
+    color: 'var(--color-sage-500)',
+    border: '1px solid rgba(58, 138, 110, 0.30)',
+    borderRadius: 'var(--radius-sm)',
+    fontSize: 14, fontWeight: 700,
+    cursor: 'pointer',
+  },
+  credRejectBtn: {
+    width: 28, height: 28,
+    background: 'rgba(196, 48, 48, 0.10)',
+    color: 'var(--text-danger)',
+    border: '1px solid rgba(196, 48, 48, 0.25)',
+    borderRadius: 'var(--radius-sm)',
+    fontSize: 12, fontWeight: 700,
+    cursor: 'pointer',
   },
 };

@@ -95,3 +95,21 @@ export async function deleteCredential(credentialId: string) {
     .eq('id', credentialId);
   if (error) throw error;
 }
+
+/** Admin only: mark a secondary credential as verified.
+ *  Fires an in-app notification to the personnel. */
+export async function verifyCredential(credentialId: string) {
+  const { error } = await supabase.rpc('verify_personnel_credential', {
+    p_credential_id: credentialId,
+  });
+  if (error) throw error;
+}
+
+/** Admin only: reject a secondary credential with an optional reason. */
+export async function rejectCredential(credentialId: string, reason?: string) {
+  const { error } = await supabase.rpc('reject_personnel_credential', {
+    p_credential_id: credentialId,
+    p_reason:        reason ?? null,
+  });
+  if (error) throw error;
+}

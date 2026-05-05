@@ -29,6 +29,11 @@ Deno.serve(async (req) => {
   let toExpiringCount = 0;
   let toExpiredCount = 0;
   let alertsFired: Array<{ threshold: number; alerts_fired: number }> = [];
+  // Credential sweep (migration 0026) — separate counts so we can
+  // surface them in cron_health and JSON response.
+  let credToExpiringCount = 0;
+  let credToExpiredCount = 0;
+  let credAlertsFired: Array<{ threshold: number; alerts_fired: number }> = [];
   let errMessage: string | null = null;
 
   try {
@@ -60,16 +65,33 @@ Deno.serve(async (req) => {
     const { data: alerts, error: alertErr } = await sb.rpc('sweep_document_expiry_alerts');
     if (alertErr) throw alertErr;
     alertsFired = alerts ?? [];
+
+    // ── personnel_credential sweep (migration 0026) ─────────────
+    // A user with ATPL + B1 + DAME has three credentials with three
+    // separate expiries. Status flip + alert ledger mirror the doc
+    // path exactly. Same idempotency guarantees.
+    const { data: credStatus, error: credStatusErr } = await sb.rpc('sweep_credential_status');
+    if (credStatusErr) throw credStatusErr;
+    if (credStatus && credStatus[0]) {
+      credToExpiringCount = credStatus[0].flipped_to_expiring ?? 0;
+      credToExpiredCount  = credStatus[0].flipped_to_expired  ?? 0;
+    }
+
+    const { data: credAlerts, error: credAlertErr } = await sb.rpc('sweep_credential_expiry_alerts');
+    if (credAlertErr) throw credAlertErr;
+    credAlertsFired = credAlerts ?? [];
   } catch (e) {
     errMessage = (e as Error).message ?? 'unknown error';
   }
 
   // ── Heartbeat: record the outcome regardless of success/failure ─
   const totalAlerts = alertsFired.reduce((s, a) => s + (a.alerts_fired ?? 0), 0);
+  const totalCredAlerts = credAlertsFired.reduce((s, a) => s + (a.alerts_fired ?? 0), 0);
   await sb.rpc('record_cron_run', {
     p_job: 'expiry-sweep',
     p_ok: errMessage === null,
-    p_rows_affected: toExpiringCount + toExpiredCount + totalAlerts,
+    p_rows_affected: toExpiringCount + toExpiredCount + totalAlerts +
+                     credToExpiringCount + credToExpiredCount + totalCredAlerts,
     p_error_msg: errMessage,
   });
 
@@ -78,8 +100,15 @@ Deno.serve(async (req) => {
   }
 
   return new Response(JSON.stringify({
-    flipped_to_expiring: toExpiringCount,
-    flipped_to_expired:  toExpiredCount,
-    alerts_fired:        alertsFired,    // [{ threshold: 90, alerts_fired: N }, ...]
+    documents: {
+      flipped_to_expiring: toExpiringCount,
+      flipped_to_expired:  toExpiredCount,
+      alerts_fired:        alertsFired,
+    },
+    credentials: {
+      flipped_to_expiring: credToExpiringCount,
+      flipped_to_expired:  credToExpiredCount,
+      alerts_fired:        credAlertsFired,
+    },
   }), { headers: { 'Content-Type': 'application/json' } });
 });
