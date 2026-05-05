@@ -30,7 +30,14 @@ export default function NotifPanel({ open, onClose, notifications, onMarkAllRead
 
         <div style={styles.list}>
           {notifications.length === 0 ? (
-            <div style={styles.empty}>No notifications</div>
+            <div style={styles.empty}>
+              <div style={styles.emptyHero}>🎉</div>
+              <div style={styles.emptyTitle}>You're all caught up</div>
+              <div style={styles.emptyBody}>
+                Document expiry alerts, AOG events, MRO quote responses,
+                and admin replies will land here as they happen.
+              </div>
+            </div>
           ) : (
             notifications.map((n) => (
               <div key={n.id} style={{ ...styles.item, background: n.unread ? 'rgba(212, 169, 52, 0.04)' : 'transparent' }}>
@@ -153,7 +160,10 @@ const styles = {
     marginBottom: 3,
   },
   itemTime: { fontSize: 10, color: 'var(--text-overline)' },
-  empty: { padding: 24, fontSize: 12, color: 'var(--text-tertiary)', textAlign: 'center' },
+  empty: { padding: '40px 24px', textAlign: 'center' },
+  emptyHero: { fontSize: 32, marginBottom: 8 },
+  emptyTitle: { fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 },
+  emptyBody: { fontSize: 12, color: 'var(--text-tertiary)', lineHeight: 1.5, maxWidth: 280, margin: '0 auto' },
   footer: { padding: '12px 18px', borderTop: '1px solid var(--border-subtle)' },
   markBtn: {
     width: '100%',

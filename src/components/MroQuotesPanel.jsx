@@ -3,6 +3,7 @@ import {
   listMroQuotes, respondMroQuote, declineMroQuote,
   acceptMroQuote, markMroWorkComplete, releaseMroEscrow,
   cancelMroQuote, disputeMroQuote, uploadMroCompletionDoc,
+  resumeMroPayment,
 } from '../api/mro';
 import { useToast } from '../lib/toast';
 import { getUser } from '../lib/auth';
@@ -104,6 +105,25 @@ export default function MroQuotesPanel({ refreshKey }) {
       }
     } catch (err) {
       toast.error(err.message || 'Could not accept');
+      setBusyId(null);
+    }
+  };
+
+  // Resume an "accepted but never paid" quote — operator clicked
+  // Accept, then closed the PayFast tab. Pulls the same idempotency
+  // key + transaction id so they land in the original checkout flow.
+  const onResume = async (q) => {
+    setBusyId(q.id);
+    try {
+      const result = await resumeMroPayment(q.id);
+      if (result.checkoutUrl) {
+        window.location.href = result.checkoutUrl;
+      } else {
+        toast.warning('Could not get a fresh checkout URL. Try cancelling and re-quoting.');
+        setBusyId(null);
+      }
+    } catch (err) {
+      toast.error(err.message || 'Could not resume');
       setBusyId(null);
     }
   };
@@ -279,6 +299,14 @@ export default function MroQuotesPanel({ refreshKey }) {
                       Accept &amp; pay
                     </button>
                   </>
+                )}
+
+                {/* Operator: accepted-but-not-paid (PayFast tab abandoned).
+                    "Resume" reuses the same idempotency key + checkout URL. */}
+                {isOperator && q.status === 'accepted' && (
+                  <button onClick={() => onResume(q)} disabled={busyId === q.id} style={styles.btnPrimary}>
+                    Resume payment →
+                  </button>
                 )}
 
                 {/* AMO: mark work complete after escrow funded */}

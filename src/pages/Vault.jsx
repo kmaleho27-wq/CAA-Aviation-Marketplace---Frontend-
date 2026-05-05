@@ -128,6 +128,9 @@ export default function Vault() {
           <h1 style={styles.h1}>Compliance Vault</h1>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
+          <Link to="/app/audit-log" style={{ ...styles.btnGhost, textDecoration: 'none' }}>
+            🔐 Audit log
+          </Link>
           <Link to="/app/audit-pack" style={{ ...styles.btnGhost, textDecoration: 'none' }}>
             📋 Audit Pack
           </Link>

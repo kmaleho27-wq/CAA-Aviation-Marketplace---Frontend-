@@ -132,8 +132,27 @@ export default function BulkImportCrewModal({ onClose, onComplete }) {
 
   const handleFile = async (file) => {
     if (!file) return;
-    const text = await file.text();
-    const rows = parseCsv(text);
+    let text;
+    try {
+      text = await file.text();
+    } catch (err) {
+      toast.error('Could not read the file. Try saving it as UTF-8 CSV and uploading again.');
+      return;
+    }
+
+    let rows;
+    try {
+      rows = parseCsv(text);
+    } catch (err) {
+      toast.error('Could not parse the file as CSV. Check the file is plain CSV with comma separators and a header row.');
+      return;
+    }
+
+    if (!Array.isArray(rows) || rows.length < 2) {
+      toast.error('The file appears empty or has no data rows. CSV needs a header row plus at least one data row.');
+      return;
+    }
+
     const v = validate(rows);
     setParsed(v);
     setStep('preview');

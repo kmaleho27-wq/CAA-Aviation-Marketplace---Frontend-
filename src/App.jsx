@@ -21,6 +21,7 @@ const Marketplace     = lazy(() => import('./pages/Marketplace'));
 const Personnel       = lazy(() => import('./pages/Personnel'));
 const Mro             = lazy(() => import('./pages/Mro'));
 const AuditPack       = lazy(() => import('./pages/AuditPack'));
+const AuditLog        = lazy(() => import('./pages/AuditLog'));
 const Support         = lazy(() => import('./pages/Support'));
 const Status          = lazy(() => import('./pages/Status'));
 const Legal           = lazy(() => import('./pages/Legal'));
@@ -80,6 +81,7 @@ export default function App() {
           <Route path="personnel" element={<Personnel />} />
           <Route path="mro" element={<Mro />} />
           <Route path="audit-pack" element={<AuditPack />} />
+          <Route path="audit-log" element={<AuditLog />} />
           <Route path="support" element={<Support />} />
           <Route path="vault" element={<Vault />} />
           <Route path="transactions" element={<Transactions />} />

@@ -225,8 +225,27 @@ export default function Personnel() {
         <ErrorBlock error={query.error} onRetry={query.refetch} />
       ) : filtered.length === 0 ? (
         <div style={styles.empty}>
-          <div style={styles.emptyTitle}>No contractors match "{activeFilterLabel}"</div>
-          <div style={styles.emptySub}>Switch back to "All" or try another category.</div>
+          {filter === 'my_crew' ? (
+            <>
+              <div style={styles.emptyTitle}>You haven't added any crew yet</div>
+              <div style={styles.emptySub}>
+                Click <strong>+ Add crew</strong> for a single member, or
+                <strong> ⬆ Bulk import</strong> to upload a CSV of your full team.
+              </div>
+            </>
+          ) : filter === 'available' ? (
+            <>
+              <div style={styles.emptyTitle}>No contractors are currently available</div>
+              <div style={styles.emptySub}>
+                Switch to "All" to see verified crew who aren't actively taking work right now.
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={styles.emptyTitle}>No contractors match "{activeFilterLabel}"</div>
+              <div style={styles.emptySub}>Switch back to "All" or try another category.</div>
+            </>
+          )}
         </div>
       ) : (
         <div style={styles.grid}>

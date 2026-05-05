@@ -120,6 +120,31 @@ export async function declineMroQuote(quoteId: string, reason?: string) {
   return snakeToCamel(data);
 }
 
+/** Operator clicked "Accept & pay" but never finished checkout. The
+ *  quote is stuck at 'accepted' with a transaction in 'in-escrow'.
+ *  Returns the same idempotency key, so payfast-create-payment hands
+ *  back the existing checkoutUrl — operator picks up where they left
+ *  off. */
+export async function resumeMroPayment(quoteId: string) {
+  const { data: hydrated, error: hydErr } = await supabase.rpc('resume_mro_payment', { p_quote_id: quoteId });
+  if (hydErr) throw hydErr;
+
+  const h = snakeToCamel(hydrated);
+  // Re-call the Edge Function with the existing idempotency_key — the
+  // existing-transaction branch returns the original checkoutUrl.
+  const { data, error } = await supabase.functions.invoke('payfast-create-payment', {
+    body: {
+      kind: 'mro',
+      mroQuoteId: quoteId,
+      idempotencyKey: h.idempotencyKey,
+      amount: h.amount,
+      item: h.item,
+    },
+  });
+  if (error) throw error;
+  return snakeToCamel(data);
+}
+
 /** Operator accepts a quote → triggers PayFast escrow checkout.
  *  Returns the PayFast checkoutUrl which the caller redirects to. */
 export async function acceptMroQuote(quoteId: string) {
