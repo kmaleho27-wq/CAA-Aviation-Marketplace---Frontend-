@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   listMroQuotes, respondMroQuote, declineMroQuote,
   acceptMroQuote, markMroWorkComplete, releaseMroEscrow,
+  cancelMroQuote, disputeMroQuote, uploadMroCompletionDoc,
 } from '../api/mro';
 import { useToast } from '../lib/toast';
 import { getUser } from '../lib/auth';
@@ -108,13 +109,87 @@ export default function MroQuotesPanel({ refreshKey }) {
   };
 
   const onMarkComplete = async (q) => {
-    setBusyId(q.id);
+    // Prompt the AMO to optionally attach an 8130/RTS doc. If they skip,
+    // the work_complete state still works — doc upload is encouraged
+    // not required at MVP.
+    const wantsDoc = window.confirm(
+      `Mark ${q.service?.name || 'this work'} complete?\n\n` +
+      `OK = upload an 8130 / RTS doc now (recommended)\n` +
+      `Cancel = mark complete without a doc (you can dispute-block-prone)`
+    );
+
+    let docPath = null;
+    if (wantsDoc) {
+      const file = await new Promise((resolve) => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'application/pdf,image/png,image/jpeg,image/heic,image/webp';
+        input.onchange = (e) => resolve(e.target.files?.[0] || null);
+        input.oncancel = () => resolve(null);
+        input.click();
+      });
+      if (!file) {
+        toast.warning('No file selected — cancelled.');
+        return;
+      }
+      setBusyId(q.id);
+      try {
+        docPath = await uploadMroCompletionDoc(q.id, file);
+      } catch (err) {
+        toast.error(err.message || 'Upload failed.');
+        setBusyId(null);
+        return;
+      }
+    } else {
+      setBusyId(q.id);
+    }
+
     try {
-      await markMroWorkComplete(q.id);
-      toast.success('Operator notified — they can now release escrow.');
+      await markMroWorkComplete(q.id, docPath);
+      toast.success(docPath
+        ? '8130/RTS uploaded. Operator notified — can now release escrow.'
+        : 'Operator notified — they can now release escrow.');
       await reload();
     } catch (err) {
       toast.error(err.message || 'Could not mark complete');
+    } finally { setBusyId(null); }
+  };
+
+  const onCancel = async (q) => {
+    const reason = window.prompt(`Cancel this MRO quote? (Optional reason)`, '');
+    if (reason === null) return;
+    setBusyId(q.id);
+    try {
+      const result = await cancelMroQuote(q.id, reason);
+      if (result.requires_refund) {
+        toast.warning('Cancelled. Funds in escrow → admin will process refund.');
+      } else {
+        toast.warning('Cancelled.');
+      }
+      await reload();
+    } catch (err) {
+      toast.error(err.message || 'Could not cancel.');
+    } finally { setBusyId(null); }
+  };
+
+  const onDispute = async (q) => {
+    const reason = window.prompt(
+      `Dispute completed work?\n\n` +
+      `Describe what's wrong (minimum 10 chars). Admin will review and arbitrate.`,
+      ''
+    );
+    if (reason === null) return;
+    if (reason.trim().length < 10) {
+      toast.error('Please give at least 10 characters of detail.');
+      return;
+    }
+    setBusyId(q.id);
+    try {
+      await disputeMroQuote(q.id, reason);
+      toast.warning('Dispute opened. Admin notified.');
+      await reload();
+    } catch (err) {
+      toast.error(err.message || 'Could not open dispute.');
     } finally { setBusyId(null); }
   };
 
@@ -213,10 +288,24 @@ export default function MroQuotesPanel({ refreshKey }) {
                   </button>
                 )}
 
-                {/* Operator: confirm + release escrow */}
+                {/* Operator: confirm + release escrow OR open dispute */}
                 {isOperator && q.status === 'work_complete' && (
-                  <button onClick={() => onRelease(q)} disabled={busyId === q.id} style={styles.btnPrimary}>
-                    Release escrow
+                  <>
+                    <button onClick={() => onDispute(q)} disabled={busyId === q.id} style={styles.btnDanger}>
+                      Dispute
+                    </button>
+                    <button onClick={() => onRelease(q)} disabled={busyId === q.id} style={styles.btnPrimary}>
+                      Release escrow
+                    </button>
+                  </>
+                )}
+
+                {/* Either party: cancel pre-release. Post-completion the
+                    operator uses Dispute instead (released = terminal). */}
+                {(isOperator || isAmo)
+                  && ['requested', 'quoted', 'accepted', 'escrowed'].includes(q.status) && (
+                  <button onClick={() => onCancel(q)} disabled={busyId === q.id} style={styles.btnGhost}>
+                    Cancel
                   </button>
                 )}
               </div>
@@ -247,4 +336,5 @@ const styles = {
   smallInput: { background: 'var(--surface-input)', color: 'var(--text-primary)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', padding: '6px 10px', fontSize: 12, height: 32, minWidth: 130 },
   btnPrimary: { background: 'var(--action-primary)', color: 'var(--action-primary-text)', border: 'none', borderRadius: 'var(--radius-md)', padding: '6px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' },
   btnGhost: { background: 'transparent', color: 'var(--text-tertiary)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', padding: '6px 12px', fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap' },
+  btnDanger: { background: 'transparent', color: 'var(--text-danger)', border: '1px solid rgba(212, 86, 86, 0.30)', borderRadius: 'var(--radius-md)', padding: '6px 12px', fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap' },
 };

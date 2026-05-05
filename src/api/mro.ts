@@ -150,11 +150,51 @@ export async function acceptMroQuote(quoteId: string) {
   return snakeToCamel(data);
 }
 
-/** AMO marks the work complete; sends operator a "confirm + release" prompt. */
-export async function markMroWorkComplete(quoteId: string) {
-  const { data, error } = await supabase.rpc('mark_mro_work_complete', { p_quote_id: quoteId });
+/** AMO marks the work complete; optionally attaches an 8130/RTS doc path
+ *  (already uploaded to the personnel-docs bucket). */
+export async function markMroWorkComplete(quoteId: string, docPath?: string) {
+  const { data, error } = await supabase.rpc('mark_mro_work_complete', {
+    p_quote_id: quoteId,
+    p_8130_doc_path: docPath || null,
+  });
   if (error) throw error;
   return snakeToCamel(data);
+}
+
+/** Either party (or admin) cancels before release. If escrow was already
+ *  funded, this opens a dispute for admin-driven PayFast refund. */
+export async function cancelMroQuote(quoteId: string, reason?: string) {
+  const { data, error } = await supabase.rpc('cancel_mro_quote', {
+    p_quote_id: quoteId, p_reason: reason || null,
+  });
+  if (error) throw error;
+  return snakeToCamel(data);
+}
+
+/** Operator opens a dispute on a work_complete or released quote. */
+export async function disputeMroQuote(quoteId: string, reason: string) {
+  const { data, error } = await supabase.rpc('dispute_mro_quote', {
+    p_quote_id: quoteId, p_reason: reason,
+  });
+  if (error) throw error;
+  return snakeToCamel(data);
+}
+
+/** AMO uploads an 8130/RTS doc into the personnel-docs bucket using
+ *  the same conventions as personnel KYC. Returns the storage path
+ *  for use with markMroWorkComplete. */
+export async function uploadMroCompletionDoc(quoteId: string, file: File) {
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth?.user) throw new Error('Not signed in.');
+
+  const safeName = file.name.replace(/[^A-Za-z0-9._-]/g, '_');
+  const path = `${auth.user.id}/mro-${quoteId}-${Date.now()}-${safeName}`;
+
+  const upload = await supabase.storage
+    .from('personnel-docs')
+    .upload(path, file, { contentType: file.type, upsert: false });
+  if (upload.error) throw upload.error;
+  return path;
 }
 
 /** Operator confirms the work and releases the escrow. */

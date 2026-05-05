@@ -567,9 +567,11 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          deletion_requested_at: string | null
           email: string
           id: string
           name: string
+          notification_prefs: Json
           role: Database["public"]["Enums"]["role"]
           stripe_account_id: string | null
           updated_at: string
@@ -577,9 +579,11 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          deletion_requested_at?: string | null
           email: string
           id: string
           name: string
+          notification_prefs?: Json
           role?: Database["public"]["Enums"]["role"]
           stripe_account_id?: string | null
           updated_at?: string
@@ -587,9 +591,11 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string
+          deletion_requested_at?: string | null
           email?: string
           id?: string
           name?: string
+          notification_prefs?: Json
           role?: Database["public"]["Enums"]["role"]
           stripe_account_id?: string | null
           updated_at?: string
