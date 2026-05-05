@@ -103,6 +103,14 @@ function ContractorCard({ c, onHire }) {
             {c.licenceSubtype ? ` · ${c.licenceSubtype}` : ''}
             {c.medicalClass && c.medicalClass !== 'none' ? ` · ${c.medicalClass.replace('_', ' ')}` : ''}
           </div>
+          {(c.extraDisciplines || []).length > 0 && (
+            <div style={styles.extraDisc}>
+              + also{' '}
+              {c.extraDisciplines
+                .map((d) => DISCIPLINE_LABEL[d] || d)
+                .join(' · ')}
+            </div>
+          )}
         </div>
       </div>
 
@@ -385,6 +393,12 @@ const styles = {
     fontSize: 11,
     color: 'var(--text-warning)',
     marginTop: 2,
+  },
+  extraDisc: {
+    fontSize: 10,
+    color: 'var(--color-sage-500)',
+    marginTop: 2,
+    fontStyle: 'italic',
   },
   badge: {
     borderRadius: 'var(--radius-pill)',

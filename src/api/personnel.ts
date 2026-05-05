@@ -37,6 +37,22 @@ export interface PersonnelFilter {
 }
 
 export async function listPersonnel(opts: PersonnelFilter = {}) {
+  // Multi-discipline support: when filtering by discipline, we also
+  // want to surface personnel whose VERIFIED secondary credential
+  // matches — an ATPL pilot who's also a verified Cat B1 engineer
+  // should appear when an operator filters for AME (66). Pre-fetch
+  // matching personnel IDs from personnel_credential and OR them in.
+  let credentialPersonnelIds: string[] = [];
+  if (opts.discipline) {
+    const { data: credRows, error: credErr } = await supabase
+      .from('personnel_credential')
+      .select('personnel_id')
+      .eq('discipline', opts.discipline)
+      .eq('status', 'verified');
+    if (credErr) throw credErr;
+    credentialPersonnelIds = (credRows ?? []).map((r) => r.personnel_id);
+  }
+
   let q = supabase
     .from('personnel_public')
     .select('*')
@@ -46,7 +62,16 @@ export async function listPersonnel(opts: PersonnelFilter = {}) {
   if (opts.filter === 'available') q = q.eq('available', true);
   if (opts.filter === 'verified')  q = q.eq('status', 'verified');
 
-  if (opts.discipline)         q = q.eq('discipline', opts.discipline);
+  if (opts.discipline) {
+    if (credentialPersonnelIds.length > 0) {
+      // Match either primary discipline OR personnel with a verified
+      // secondary credential. Postgrest .or() syntax is comma-separated.
+      const idList = credentialPersonnelIds.join(',');
+      q = q.or(`discipline.eq.${opts.discipline},id.in.(${idList})`);
+    } else {
+      q = q.eq('discipline', opts.discipline);
+    }
+  }
   if (opts.sacaaPart != null)  q = q.eq('sacaa_part', opts.sacaaPart);
   if (opts.aircraftCategory)   q = q.eq('aircraft_category', opts.aircraftCategory);
   if (opts.location)           q = q.ilike('location', `%${opts.location}%`);
@@ -56,7 +81,30 @@ export async function listPersonnel(opts: PersonnelFilter = {}) {
 
   const { data, error } = await q;
   if (error) throw error;
-  return snakeToCamel(data);
+
+  // Attach verified secondary disciplines to each row so the card can
+  // render "+ B1 · DAME" chips next to the primary. Single round-trip
+  // for all returned IDs.
+  const rows = data ?? [];
+  if (rows.length > 0) {
+    const ids = rows.map((r: { id: string }) => r.id);
+    const { data: allCreds } = await supabase
+      .from('personnel_credential')
+      .select('personnel_id, discipline, status')
+      .in('personnel_id', ids)
+      .eq('status', 'verified');
+    const credsByPersonnel = new Map<string, string[]>();
+    (allCreds ?? []).forEach((c: { personnel_id: string; discipline: string }) => {
+      const arr = credsByPersonnel.get(c.personnel_id) ?? [];
+      arr.push(c.discipline);
+      credsByPersonnel.set(c.personnel_id, arr);
+    });
+    rows.forEach((r: { id: string; extra_disciplines?: string[] }) => {
+      r.extra_disciplines = credsByPersonnel.get(r.id) ?? [];
+    });
+  }
+
+  return snakeToCamel(rows);
 }
 
 /**
