@@ -12,7 +12,8 @@
     "icons": "node scripts/generate-pwa-icons.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
-    "pitch": "node scripts/build-pitch-deck.mjs"
+    "pitch": "node scripts/build-pitch-deck.mjs",
+    "docx": "node scripts/export-docs-to-word.mjs"
   },
   "dependencies": {
     "@sentry/react": "^10.51.0",

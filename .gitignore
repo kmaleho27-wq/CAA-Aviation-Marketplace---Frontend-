@@ -32,3 +32,6 @@ yarn-error.log*
 
 # Claude Code session data
 .claude/
+
+# Generated Word docs (run `npm run docx` to regenerate)
+docs/word/
