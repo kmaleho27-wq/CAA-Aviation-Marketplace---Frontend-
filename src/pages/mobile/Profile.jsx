@@ -8,6 +8,7 @@ import {
   getPersonnelDocUrl,
 } from '../../api/documents';
 import { downloadMyDataExport, requestAccountDeletion } from '../../api/popi';
+import AdditionalCredentials from '../../components/AdditionalCredentials';
 import { supabase } from '../../lib/supabase';
 import { getDocRequirements } from '../../data/document-requirements';
 import { PROFILE_STATS, SETTINGS_ROWS } from '../../data/mobile';
@@ -324,6 +325,8 @@ export default function Profile() {
           </div>
         ))}
       </div>
+
+      <AdditionalCredentials />
 
       <ComplianceDocs />
 

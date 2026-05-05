@@ -5,6 +5,7 @@ import {
   listPendingPersonnel, approvePersonnel, rejectPersonnel,
 } from '../../api/admin';
 import { listPersonnelDocs, getPersonnelDocUrl } from '../../api/documents';
+import { listPersonnelCredentials } from '../../api/credentials';
 import Badge from '../../components/admin/Badge';
 import { useToast } from '../../lib/toast';
 import { LoadingBlock, ErrorBlock } from '../../components/ApiState';
@@ -42,12 +43,16 @@ function prettyNonLicensed(v) {
 function PendingPersonnelCard({ p, onApprove, onReject, busy }) {
   const info = DISCIPLINE_INFO[p.discipline] || { label: p.discipline, part: p.sacaaPart };
   const [uploadedDocs, setUploadedDocs] = useState([]);
+  const [extraCreds, setExtraCreds] = useState([]);
 
   useEffect(() => {
     let cancelled = false;
     listPersonnelDocs(p.id)
       .then((rows) => { if (!cancelled) setUploadedDocs(rows); })
       .catch(() => { /* silent — empty state covers it */ });
+    listPersonnelCredentials(p.id)
+      .then((rows) => { if (!cancelled) setExtraCreds(rows); })
+      .catch(() => { /* personnel row may have no extras */ });
     return () => { cancelled = true; };
   }, [p.id]);
 
@@ -117,6 +122,26 @@ function PendingPersonnelCard({ p, onApprove, onReject, busy }) {
               {p.endorsements.map((e) => (
                 <span key={e} style={styles.docChip}>✓ {e}</span>
               ))}
+            </div>
+          )}
+
+          {extraCreds.length > 0 && (
+            <div style={styles.extraCreds}>
+              <div style={styles.extraCredsLabel}>+ {extraCreds.length} additional credential{extraCreds.length === 1 ? '' : 's'}:</div>
+              {extraCreds.map((c) => {
+                const label = DISCIPLINE_INFO[c.discipline]?.label || c.discipline;
+                return (
+                  <div key={c.id} style={styles.extraCredRow}>
+                    <strong style={{ color: 'var(--text-primary)' }}>{label}</strong>
+                    {c.license ? <> · <code style={{ color: 'var(--text-warning)' }}>{c.license}</code></> : ''}
+                    {c.licenceSubtype ? ` · ${c.licenceSubtype}` : ''}
+                    {c.medicalClass && c.medicalClass !== 'none' ? ` · ${c.medicalClass.replace('_', ' ')}` : ''}
+                    <span style={{ marginLeft: 8, fontSize: 10, color: c.status === 'verified' ? 'var(--color-sage-500)' : 'var(--text-warning)' }}>
+                      [{c.status}]
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           )}
 
@@ -498,5 +523,25 @@ const styles = {
     color: 'var(--text-overline)',
     fontStyle: 'italic',
     marginTop: 8,
+  },
+  extraCreds: {
+    background: 'rgba(58, 138, 110, 0.06)',
+    border: '1px solid rgba(58, 138, 110, 0.20)',
+    borderRadius: 'var(--radius-md)',
+    padding: '8px 12px',
+    margin: '8px 0',
+  },
+  extraCredsLabel: {
+    fontSize: 10,
+    fontWeight: 700,
+    letterSpacing: '0.08em',
+    textTransform: 'uppercase',
+    color: 'var(--text-overline)',
+    marginBottom: 6,
+  },
+  extraCredRow: {
+    fontSize: 12,
+    color: 'var(--text-secondary)',
+    lineHeight: 1.6,
   },
 };
