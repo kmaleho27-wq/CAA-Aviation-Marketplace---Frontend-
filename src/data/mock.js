@@ -76,11 +76,22 @@ export const NOTIFICATIONS = [
   { id: 5, type: 'warning', title: 'AOG Resolved — 5Y-KQZ',             title2: 'Nose Gear Actuator dispatched. Awaiting delivery confirmation.',             time: 'Yesterday',  unread: false },
 ];
 
+// IA spine — every nav item declares the platform roles that can see
+// it. Sidebar filters by the signed-in user's role at render time.
+// Per /autoplan design review: 4-5 items max per role to keep IA
+// uncluttered. Compliance features (expiry, audit) progressive-
+// disclose inside the relevant entity, not top-level nav.
 export const NAV_ITEMS = [
-  { id: 'dashboard',    path: '/app/dashboard',    label: 'Dashboard',         icon: 'grid'        },
-  { id: 'marketplace',  path: '/app/marketplace',  label: 'Parts',             icon: 'package',    badge: 3 },
-  { id: 'personnel',    path: '/app/personnel',    label: 'Crew',              icon: 'users'       },
-  { id: 'mro',          path: '/app/mro',          label: 'MRO Services',      icon: 'wrench'      },
-  { id: 'vault',        path: '/app/vault',        label: 'Compliance Vault',  icon: 'shield'      },
-  { id: 'transactions', path: '/app/transactions', label: 'Transactions',      icon: 'credit-card' },
+  { id: 'dashboard',    path: '/app/dashboard',    label: 'Dashboard',         icon: 'grid',        roles: ['OPERATOR', 'AMO', 'SUPPLIER', 'ADMIN'] },
+  { id: 'personnel',    path: '/app/personnel',    label: 'Crew',              icon: 'users',                                                         roles: ['OPERATOR', 'ADMIN'] },
+  { id: 'marketplace',  path: '/app/marketplace',  label: 'Parts',             icon: 'package',     badge: 3,                                         roles: ['OPERATOR', 'SUPPLIER', 'ADMIN'] },
+  { id: 'mro',          path: '/app/mro',          label: 'MRO Services',      icon: 'wrench',                                                        roles: ['OPERATOR', 'AMO', 'ADMIN'] },
+  { id: 'vault',        path: '/app/vault',        label: 'Compliance Vault',  icon: 'shield',                                                        roles: ['OPERATOR', 'AMO', 'ADMIN'] },
+  { id: 'transactions', path: '/app/transactions', label: 'Transactions',      icon: 'credit-card',                                                   roles: ['OPERATOR', 'AMO', 'SUPPLIER', 'ADMIN'] },
 ];
+
+/** Filter NAV_ITEMS to those allowed for the given platform role. */
+export function navItemsForRole(role) {
+  if (!role) return NAV_ITEMS;  // unauthenticated fallback
+  return NAV_ITEMS.filter((item) => item.roles?.includes(role));
+}

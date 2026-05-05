@@ -4,6 +4,7 @@ import { listPersonnel, createPersonnelByOperator } from '../api/personnel';
 import { LoadingBlock, ErrorBlock } from '../components/ApiState';
 import HireModal from '../components/HireModal';
 import AddCrewModal from '../components/AddCrewModal';
+import BulkImportCrewModal from '../components/BulkImportCrewModal';
 import TrustBadge from '../components/TrustBadge';
 import { useToast } from '../lib/toast';
 import { getUser } from '../lib/auth';
@@ -133,6 +134,7 @@ export default function Personnel() {
   const [filter, setFilter] = useState('all');
   const [hired, setHired] = useState(null);
   const [addOpen, setAddOpen] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
   const toast = useToast();
 
   const authUser = getUser();
@@ -166,11 +168,17 @@ export default function Personnel() {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           {isOperator && (
-            <button onClick={() => setAddOpen(true)} style={styles.btnPrimary}>+ Add crew</button>
+            <>
+              <button onClick={() => setAddOpen(true)} style={styles.btnPrimary}>+ Add crew</button>
+              <button
+                onClick={() => setBulkOpen(true)}
+                style={{ ...styles.btnPrimary, background: 'transparent', color: 'var(--text-warning)', border: '1px solid rgba(212, 169, 52, 0.30)' }}
+                title="Upload a CSV to add multiple crew at once"
+              >
+                ⬆ Bulk import
+              </button>
+            </>
           )}
-          <button style={{ ...styles.btnPrimary, background: 'transparent', color: 'var(--text-warning)', border: '1px solid rgba(212, 169, 52, 0.30)' }}>
-            + Post Requirement
-          </button>
         </div>
       </div>
 
@@ -215,6 +223,12 @@ export default function Personnel() {
         <AddCrewModal
           onClose={() => setAddOpen(false)}
           onSubmit={handleCrewCreated}
+        />
+      )}
+      {bulkOpen && (
+        <BulkImportCrewModal
+          onClose={() => setBulkOpen(false)}
+          onComplete={() => query.refetch()}
         />
       )}
     </div>

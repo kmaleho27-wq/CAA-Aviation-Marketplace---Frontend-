@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import Logo from './Logo';
-import { NAV_ITEMS } from '../data/mock';
+import { navItemsForRole } from '../data/mock';
 import { getUser, logout } from '../lib/auth';
 
 const ICONS = {
@@ -51,8 +51,9 @@ const ICONS = {
 
 export default function Sidebar({ aogCount = 0 }) {
   const navigate = useNavigate();
-  const user = getUser() || { name: 'Naluka User', role: 'Operator' };
+  const user = getUser() || { name: 'Naluka User', role: 'OPERATOR' };
   const initials = user.name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase();
+  const navItems = navItemsForRole(user.role);
 
   const handleLogout = () => {
     logout();
@@ -79,7 +80,7 @@ export default function Sidebar({ aogCount = 0 }) {
 
       <nav style={styles.nav}>
         <div style={styles.navSection}>MAIN</div>
-        {NAV_ITEMS.map((item) => (
+        {navItems.map((item) => (
           <NavLink key={item.id} to={item.path} style={navItemStyle}>
             {({ isActive }) => (
               <>

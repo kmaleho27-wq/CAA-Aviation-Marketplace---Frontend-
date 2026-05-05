@@ -28,6 +28,7 @@ Deno.serve(async (req) => {
 
   let toExpiringCount = 0;
   let toExpiredCount = 0;
+  let alertsFired: Array<{ threshold: number; alerts_fired: number }> = [];
   let errMessage: string | null = null;
 
   try {
@@ -52,15 +53,23 @@ Deno.serve(async (req) => {
 
     toExpiringCount = toExpiring.data?.length ?? 0;
     toExpiredCount = toExpired.data?.length ?? 0;
+
+    // ── Fire 90/30/7-day alerts for upcoming expiries (migration 0015)
+    // The RPC is idempotent per (doc, threshold) — running it on every
+    // cron tick is safe and correct; ledger prevents duplicate alerts.
+    const { data: alerts, error: alertErr } = await sb.rpc('sweep_document_expiry_alerts');
+    if (alertErr) throw alertErr;
+    alertsFired = alerts ?? [];
   } catch (e) {
     errMessage = (e as Error).message ?? 'unknown error';
   }
 
   // ── Heartbeat: record the outcome regardless of success/failure ─
+  const totalAlerts = alertsFired.reduce((s, a) => s + (a.alerts_fired ?? 0), 0);
   await sb.rpc('record_cron_run', {
     p_job: 'expiry-sweep',
     p_ok: errMessage === null,
-    p_rows_affected: toExpiringCount + toExpiredCount,
+    p_rows_affected: toExpiringCount + toExpiredCount + totalAlerts,
     p_error_msg: errMessage,
   });
 
@@ -71,5 +80,6 @@ Deno.serve(async (req) => {
   return new Response(JSON.stringify({
     flipped_to_expiring: toExpiringCount,
     flipped_to_expired:  toExpiredCount,
+    alerts_fired:        alertsFired,    // [{ threshold: 90, alerts_fired: N }, ...]
   }), { headers: { 'Content-Type': 'application/json' } });
 });
