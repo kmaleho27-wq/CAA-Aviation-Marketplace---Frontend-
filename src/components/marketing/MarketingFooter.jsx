@@ -17,6 +17,8 @@ export default function MarketingFooter() {
         <Link to="/pricing"    style={styles.link}>Pricing</Link>
         <a href="/#compliance" style={styles.link}>Compliance</a>
         <Link to="/status"     style={styles.link}>Status</Link>
+        <Link to="/terms"      style={styles.link}>Terms</Link>
+        <Link to="/privacy"    style={styles.link}>Privacy</Link>
         <Link to="/login"      style={styles.link}>Sign in</Link>
       </div>
 

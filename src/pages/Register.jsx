@@ -103,6 +103,7 @@ export default function Register() {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(null);
+  const [consented, setConsented] = useState(false);
   const navigate = useNavigate();
 
   const account = ACCOUNT_TYPES.find((a) => a.key === accountType);
@@ -111,6 +112,10 @@ export default function Register() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    if (!consented) {
+      setError('Please review and accept the Terms and Privacy Policy to continue.');
+      return;
+    }
     setError('');
     setSubmitting(true);
     try {
@@ -353,9 +358,24 @@ export default function Register() {
             </>
           )}
 
+          {/* POPI Act + ToS consent — checkbox required for account creation */}
+          <label style={styles.consentRow}>
+            <input
+              type="checkbox"
+              checked={consented}
+              onChange={(e) => setConsented(e.target.checked)}
+              style={styles.consentCheck}
+            />
+            <span style={styles.consentText}>
+              I agree to Naluka's <Link to="/terms" target="_blank" rel="noreferrer" style={styles.consentLink}>Terms of Service</Link>
+              {' '}and <Link to="/privacy" target="_blank" rel="noreferrer" style={styles.consentLink}>Privacy Policy</Link>,
+              and consent to the processing of my personal information per the POPI Act for the purpose of operating the Naluka platform.
+            </span>
+          </label>
+
           {error && <div style={styles.error}>{error}</div>}
 
-          <button type="submit" disabled={submitting} style={{ ...styles.btn, opacity: submitting ? 0.6 : 1 }}>
+          <button type="submit" disabled={submitting || !consented} style={{ ...styles.btn, opacity: (submitting || !consented) ? 0.6 : 1 }}>
             {submitting ? 'Creating account…' : 'Create account'}
           </button>
           </form>
@@ -541,6 +561,27 @@ const styles = {
     color: 'var(--text-tertiary)',
     fontSize: 12,
     lineHeight: 1.5,
+  },
+  consentRow: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: 10,
+    marginTop: 18,
+    cursor: 'pointer',
+  },
+  consentCheck: {
+    marginTop: 3,
+    accentColor: 'var(--action-primary)',
+    flexShrink: 0,
+  },
+  consentText: {
+    fontSize: 12,
+    color: 'var(--text-tertiary)',
+    lineHeight: 1.55,
+  },
+  consentLink: {
+    color: 'var(--text-warning)',
+    textDecoration: 'none',
   },
   error: {
     marginTop: 16,

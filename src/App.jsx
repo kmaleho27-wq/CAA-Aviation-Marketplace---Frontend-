@@ -23,6 +23,7 @@ const Mro             = lazy(() => import('./pages/Mro'));
 const AuditPack       = lazy(() => import('./pages/AuditPack'));
 const Support         = lazy(() => import('./pages/Support'));
 const Status          = lazy(() => import('./pages/Status'));
+const Legal           = lazy(() => import('./pages/Legal'));
 const Vault           = lazy(() => import('./pages/Vault'));
 const Transactions    = lazy(() => import('./pages/Transactions'));
 const Settings        = lazy(() => import('./pages/Settings'));
@@ -60,6 +61,8 @@ export default function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/status" element={<Status />} />
+        <Route path="/terms" element={<Legal which="terms" />} />
+        <Route path="/privacy" element={<Legal which="privacy" />} />
 
         <Route
           path="/app"
