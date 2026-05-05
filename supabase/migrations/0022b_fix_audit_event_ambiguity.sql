@@ -10,7 +10,13 @@
 -- get camelCase names anyway via snakeToCamel — only the API
 -- shape changes superficially.
 
-create or replace function public.get_my_audit_events(
+-- DROP first because we're changing the RETURNS TABLE shape (renamed
+-- OUT params id→event_id, seq→event_seq, type→event_type). Postgres
+-- refuses CREATE OR REPLACE when the return-row type changes — error
+-- 42P13 "cannot change return type of existing function".
+drop function if exists public.get_my_audit_events(int, int);
+
+create function public.get_my_audit_events(
   p_from_seq int default 0,
   p_limit int default 1000
 )
