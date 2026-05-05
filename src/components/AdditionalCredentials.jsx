@@ -208,7 +208,7 @@ export default function AdditionalCredentials() {
 }
 
 const styles = {
-  wrap: { background: '#1B2C5E', border: '1px solid var(--border-subtle)', borderRadius: 12, padding: '14px 16px', marginBottom: 12 },
+  wrap: { background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderRadius: 12, padding: '14px 16px', marginBottom: 12 },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 },
   title: { fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' },
   sub: { fontSize: 11, color: 'var(--text-tertiary)', marginTop: 4, lineHeight: 1.5 },

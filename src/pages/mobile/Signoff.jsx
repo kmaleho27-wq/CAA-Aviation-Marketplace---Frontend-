@@ -84,7 +84,7 @@ export default function Signoff() {
               <div
                 style={{
                   ...styles.stepDot,
-                  background: i <= step ? 'var(--action-primary)' : '#1B2C5E',
+                  background: i <= step ? 'var(--action-primary)' : 'var(--surface-input)',
                   color: i <= step ? 'var(--action-primary-text)' : 'var(--text-tertiary)',
                 }}
               >
@@ -210,7 +210,7 @@ const styles = {
     marginBottom: 14,
   },
   workCard: {
-    background: '#1B2C5E',
+    background: 'var(--surface-card)',
     border: '1px solid var(--border-subtle)',
     borderRadius: 12,
     padding: 14,

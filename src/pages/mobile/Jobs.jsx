@@ -156,7 +156,7 @@ const styles = {
     color: 'var(--text-warning)',
   },
   card: {
-    background: '#1B2C5E',
+    background: 'var(--surface-card)',
     border: '1px solid var(--border-subtle)',
     borderRadius: 12,
     padding: 14,
@@ -255,7 +255,7 @@ const styles = {
     marginBottom: 14,
   },
   detailCard: {
-    background: '#1B2C5E',
+    background: 'var(--surface-card)',
     border: '1px solid var(--border-subtle)',
     borderRadius: 8,
     padding: '10px 12px',

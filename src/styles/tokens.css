@@ -159,8 +159,11 @@
   --text-danger:       #B83838;        /* darker red */
   --text-aog:          #C4421E;        /* rust stays roughly same — it's the alarm color */
 
-  /* Actions — mustard button now has dark text on light bg */
-  --action-primary-text: #FFFFFF;       /* on mustard button background */
+  /* Actions — mustard button keeps dark navy text in light mode too.
+     The mustard background doesn't flip between modes (it's a brand
+     colour), so the text shouldn't either. White-on-mustard is only
+     ~2.5:1 contrast which fails WCAG AA; navy-on-mustard is ~10:1. */
+  --action-primary-text: var(--color-midnight);
 
   /* Status badges — bump alpha so they're visible on white */
   --status-verified-bg:     rgba(58, 138, 110, 0.14);

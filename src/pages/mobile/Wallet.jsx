@@ -130,7 +130,7 @@ const styles = {
     marginBottom: 8,
   },
   docCard: {
-    background: '#1B2C5E',
+    background: 'var(--surface-card)',
     border: '1px solid var(--border-subtle)',
     borderRadius: 10,
     padding: '11px 14px',
@@ -157,7 +157,7 @@ const styles = {
     gap: 8,
   },
   earningsCard: {
-    background: '#1B2C5E',
+    background: 'var(--surface-card)',
     border: '1px solid var(--border-subtle)',
     borderRadius: 10,
     padding: '12px 14px',

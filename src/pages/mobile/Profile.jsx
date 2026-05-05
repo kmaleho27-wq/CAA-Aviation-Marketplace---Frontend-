@@ -167,7 +167,7 @@ function ComplianceDocs() {
 
 const complianceStyles = {
   wrap: {
-    background: '#1B2C5E',
+    background: 'var(--surface-card)',
     border: '1px solid var(--border-subtle)',
     borderRadius: 12,
     padding: '14px 16px',
@@ -309,7 +309,7 @@ export default function Profile() {
           aria-label="Toggle availability"
           style={{
             ...styles.toggle,
-            background: available ? 'var(--action-primary)' : '#243861',
+            background: available ? 'var(--action-primary)' : 'var(--surface-input)',
             borderColor: available ? 'var(--action-primary)' : 'var(--border-subtle)',
           }}
         >
@@ -366,7 +366,7 @@ const styles = {
     width: 72,
     height: 72,
     borderRadius: '50%',
-    background: '#243861',
+    background: 'var(--surface-raised)',
     border: '2px solid rgba(212, 169, 52, 0.40)',
     display: 'flex',
     alignItems: 'center',
@@ -395,7 +395,7 @@ const styles = {
   badgeDot: { width: 7, height: 7, borderRadius: '50%', background: 'var(--color-sage-500)' },
   badgeText: { fontSize: 11, fontWeight: 600, color: 'var(--color-sage-500)' },
   toggleCard: {
-    background: '#1B2C5E',
+    background: 'var(--surface-card)',
     border: '1px solid var(--border-subtle)',
     borderRadius: 12,
     padding: '14px 16px',
@@ -434,7 +434,7 @@ const styles = {
     marginBottom: 12,
   },
   statCard: {
-    background: '#1B2C5E',
+    background: 'var(--surface-card)',
     border: '1px solid var(--border-subtle)',
     borderRadius: 10,
     padding: '10px 12px',
@@ -442,7 +442,7 @@ const styles = {
   statLabel: { fontSize: 10, color: 'var(--text-tertiary)', marginBottom: 3 },
   statValue: { fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 400, letterSpacing: '0.01em' },
   settingRow: {
-    background: '#1B2C5E',
+    background: 'var(--surface-card)',
     border: '1px solid var(--border-subtle)',
     borderRadius: 10,
     padding: '12px 14px',
