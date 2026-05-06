@@ -100,8 +100,19 @@ function ServiceCard({ s, onQuote, busy }) {
   );
 }
 
+// Disciplines an operator typically searches for when picking an AMO.
+// Pilots / cabin crew / ATC are filtered out — operators hire AMOs for
+// engineering and ground-ops work, not flight crew.
+const FILTERABLE_DISCIPLINES = [
+  { key: 'ame',             label: 'AME (Part 66)' },
+  { key: 'flight_engineer', label: 'Flight Engineer' },
+  { key: 'aviation_medical',label: 'DAME' },
+  { key: 'non_licensed',    label: 'Ground Ops' },
+];
+
 export default function Mro() {
   const [category, setCategory] = useState('all');
+  const [disciplineFilter, setDisciplineFilter] = useState(new Set());
   const [busyId, setBusyId] = useState(null);
   const [listOpen, setListOpen] = useState(false);
   const toast = useToast();
@@ -110,7 +121,25 @@ export default function Mro() {
 
   const filterArg = category === 'all' ? {} : { category };
   const query = useApi(() => listMroServices(filterArg), [category]);
-  const services = query.data || [];
+  const allServices = query.data || [];
+
+  // Apply discipline filter client-side (we already loaded crew counts
+  // per service in listMroServices). Empty set = show all. Multi-select
+  // is AND — operator looking for both B1 + DAME wants shops with both.
+  const services = disciplineFilter.size === 0
+    ? allServices
+    : allServices.filter((s) => {
+        const disciplinesOnStaff = new Set((s.crewDisciplines ?? []).map((c) => c.discipline));
+        return Array.from(disciplineFilter).every((d) => disciplinesOnStaff.has(d));
+      });
+
+  const toggleDiscipline = (key) => {
+    setDisciplineFilter((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  };
 
   const onQuote = async (service) => {
     if (busyId) return;
@@ -154,6 +183,32 @@ export default function Mro() {
       {/* Quotes panel — visible to anyone with quotes (RLS gates rows). */}
       <MroQuotesPanel />
 
+      {/* Discipline filter — narrows to AMOs that have verified crew
+          for ALL selected disciplines on staff. Hidden from AMO/admin
+          users since they're not shopping for shops. */}
+      {!isAmo && (
+        <div style={styles.disciplineFilterRow}>
+          <span style={styles.disciplineFilterLabel}>Required crew:</span>
+          {FILTERABLE_DISCIPLINES.map((d) => {
+            const active = disciplineFilter.has(d.key);
+            return (
+              <button
+                key={d.key}
+                onClick={() => toggleDiscipline(d.key)}
+                style={{ ...styles.disciplineChip, ...(active ? styles.disciplineChipActive : {}) }}
+              >
+                {active ? '✓ ' : ''}{d.label}
+              </button>
+            );
+          })}
+          {disciplineFilter.size > 0 && (
+            <button onClick={() => setDisciplineFilter(new Set())} style={styles.clearChip}>
+              Clear
+            </button>
+          )}
+        </div>
+      )}
+
       <div style={styles.filterRow}>
         {CATEGORIES.map((c) => (
           <button
@@ -172,8 +227,16 @@ export default function Mro() {
         <ErrorBlock error={query.error} onRetry={query.refetch} />
       ) : services.length === 0 ? (
         <div style={styles.empty}>
-          <div style={styles.emptyTitle}>No services match this category</div>
-          <div style={styles.emptySub}>Try "All" or pick a different category.</div>
+          <div style={styles.emptyTitle}>
+            {disciplineFilter.size > 0
+              ? `No AMOs match those discipline requirements`
+              : `No services match this category`}
+          </div>
+          <div style={styles.emptySub}>
+            {disciplineFilter.size > 0
+              ? 'Try fewer required disciplines, or pick a different category.'
+              : 'Try "All" or pick a different category.'}
+          </div>
         </div>
       ) : (
         <div style={styles.grid}>
@@ -221,4 +284,9 @@ const styles = {
   crewRow: { display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border-subtle)' },
   crewLabel: { fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-overline)' },
   crewChip: { background: 'rgba(58, 138, 110, 0.10)', color: 'var(--color-sage-500)', border: '1px solid rgba(58, 138, 110, 0.25)', borderRadius: 'var(--radius-pill)', padding: '2px 8px', fontSize: 10, fontWeight: 600 },
+  disciplineFilterRow: { display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', marginBottom: 12, paddingBottom: 12, borderBottom: '1px solid var(--border-subtle)' },
+  disciplineFilterLabel: { fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-overline)', marginRight: 4 },
+  disciplineChip: { background: 'transparent', border: '1px solid var(--border-default)', color: 'var(--text-tertiary)', borderRadius: 'var(--radius-pill)', padding: '4px 12px', fontSize: 11, cursor: 'pointer' },
+  disciplineChipActive: { background: 'rgba(58, 138, 110, 0.10)', borderColor: 'rgba(58, 138, 110, 0.35)', color: 'var(--color-sage-500)', fontWeight: 600 },
+  clearChip: { background: 'transparent', border: 'none', color: 'var(--text-tertiary)', fontSize: 11, cursor: 'pointer', textDecoration: 'underline', padding: '4px 8px' },
 };

@@ -5,6 +5,37 @@ import { landingPathForRole, isTokenValid, getUser } from '../lib/auth';
 import Logo from '../components/Logo';
 import PasswordInput from '../components/PasswordInput';
 
+// Translate raw Supabase auth errors into something a tired pilot at
+// 2am can actually act on. Supabase's English is technically correct
+// but operationally useless ("Invalid login credentials" tells the
+// user nothing about which thing was wrong, and rate-limit errors
+// look like our system is broken).
+function humanizeAuthError(err) {
+  const raw = (err.response?.data?.message || err.message || '').toLowerCase();
+
+  if (raw.includes('rate limit') || raw.includes('too many') || raw.includes('429')) {
+    return 'Too many sign-in attempts. Wait a few minutes, then try again. ' +
+           'If you forgot your password, use the "Forgot password?" link below.';
+  }
+  if (raw.includes('email not confirmed')) {
+    return 'Your email isn\'t confirmed yet. Check your inbox (and spam folder) ' +
+           'for the confirmation link, then try again.';
+  }
+  if (raw.includes('invalid login') || raw.includes('invalid credentials')) {
+    return 'Email or password is incorrect. Use the eye icon to check what you typed, ' +
+           'or click "Forgot password?" if you can\'t remember.';
+  }
+  if (raw.includes('user not found')) {
+    return 'No account with that email. Check the spelling, or register if you\'re new.';
+  }
+  if (raw.includes('network') || raw.includes('failed to fetch')) {
+    return 'Couldn\'t reach the server. Check your internet connection and try again.';
+  }
+  // Fall back to whatever the server said, with a sensible default.
+  return err.response?.data?.message || err.message ||
+         'Sign-in failed — check your email and password.';
+}
+
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -35,11 +66,7 @@ export default function Login() {
       const redirectTo = fromPath || landingPathForRole(user?.role);
       navigate(redirectTo, { replace: true });
     } catch (err) {
-      setError(
-        err.response?.data?.message
-          || err.message
-          || 'Login failed — check your email and password.',
-      );
+      setError(humanizeAuthError(err));
     } finally {
       setSubmitting(false);
     }

@@ -142,6 +142,28 @@ export default function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Realtime: refresh the compliance banner when:
+  //   - a personnel_credential is verified/expired/added (admin queue activity)
+  //   - a personnel row's status flips (admin approves a primary credential)
+  //   - a document expires/renews (watchdog status flip)
+  // The same channel handles all three so we don't blow the channel budget.
+  useEffect(() => {
+    const channel = supabase
+      .channel('compliance_dashboard_realtime')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'personnel_credential' },
+        () => compliance.refetch())
+      .on('postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'personnel' },
+        () => compliance.refetch())
+      .on('postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'document' },
+        () => compliance.refetch())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div style={styles.page}>
       <div style={styles.header}>

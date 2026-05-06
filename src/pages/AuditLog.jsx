@@ -100,6 +100,54 @@ export default function AuditLog() {
     }
   };
 
+  // Build a CSV from the current filtered set. Naive escaping — wrap
+  // every value in double quotes and escape inner quotes by doubling.
+  // Fine for SACAA inspectors opening in Excel; not RFC 4180-perfect.
+  const downloadCsv = () => {
+    if (filteredEvents.length === 0) return;
+    const cols = ['seq', 'type', 'subject_id', 'created_at', 'hash', 'payload'];
+    const escape = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const rows = filteredEvents.map((e) => [
+      e.eventSeq,
+      e.eventType,
+      e.subjectId,
+      e.createdAt,
+      e.hash,
+      JSON.stringify(e.payload ?? {}),
+    ].map(escape).join(','));
+    const csv = [cols.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `naluka-audit-log-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${filteredEvents.length} events to CSV`);
+  };
+
+  const downloadJson = () => {
+    if (filteredEvents.length === 0) return;
+    const payload = {
+      generated_at: new Date().toISOString(),
+      filter: { type: typeFilter, search: search || null },
+      events_count: filteredEvents.length,
+      events: filteredEvents,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `naluka-audit-log-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${filteredEvents.length} events to JSON`);
+  };
+
   const onCopyProof = () => {
     if (!proof) return;
     const minSeq = Math.min(...events.map((e) => e.eventSeq));
@@ -147,7 +195,23 @@ request a global verify_chain() result from a Naluka admin.`;
             or insurance auditors.
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button
+            onClick={downloadCsv}
+            disabled={filteredEvents.length === 0}
+            style={{ ...styles.btnGhost, opacity: filteredEvents.length === 0 ? 0.5 : 1 }}
+            title="Export the current filtered view to CSV"
+          >
+            ⬇ CSV
+          </button>
+          <button
+            onClick={downloadJson}
+            disabled={filteredEvents.length === 0}
+            style={{ ...styles.btnGhost, opacity: filteredEvents.length === 0 ? 0.5 : 1 }}
+            title="Export the current filtered view to JSON"
+          >
+            ⬇ JSON
+          </button>
           <Link to="/app/audit-pack" style={{ ...styles.btnGhost, textDecoration: 'none' }}>📋 Audit Pack</Link>
         </div>
       </div>

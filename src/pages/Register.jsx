@@ -76,6 +76,34 @@ const DISCIPLINES = [
     sacaa_part: null, subtypes: [],                   aircraft: 'none',       medical: 'none' },
 ];
 
+// Translate raw Supabase signup errors into actionable messages.
+// Critical case: "email rate limit exceeded" — Supabase free tier caps
+// auth emails at ~30/hour. Real customers have hit this. Until custom
+// SMTP via Resend is wired up, we explain what's happening so they
+// don't think the platform is broken.
+function humanizeRegisterError(err) {
+  const raw = (err.response?.data?.message || err.message || '').toLowerCase();
+
+  if (raw.includes('email rate limit') || raw.includes('rate limit')) {
+    return 'Our email provider hit a temporary cap. Please wait ~60 minutes and try again. ' +
+           'If this happens repeatedly, contact support@naluka.aero — we can create your account directly.';
+  }
+  if (raw.includes('already registered') || raw.includes('already exists') || raw.includes('user already')) {
+    return 'An account with this email already exists. Try signing in, or use "Forgot password?" if you can\'t remember.';
+  }
+  if (raw.includes('invalid email') || raw.includes('email format')) {
+    return 'That email doesn\'t look right. Double-check the format (e.g. you@example.com).';
+  }
+  if (raw.includes('password') && (raw.includes('weak') || raw.includes('short'))) {
+    return 'Password too weak. Use at least 8 characters with a mix of letters and numbers.';
+  }
+  if (raw.includes('network') || raw.includes('failed to fetch')) {
+    return 'Couldn\'t reach the server. Check your internet connection and try again.';
+  }
+  return err.response?.data?.message || err.message ||
+         'Registration failed — please check your details and try again.';
+}
+
 // Free-form ground ops roles — surfaces a dropdown for non_licensed
 // instead of asking the user to invent a string.
 const NON_LICENSED_ROLES = [
@@ -146,11 +174,7 @@ export default function Register() {
         setSubmitted({ email });
       }
     } catch (err) {
-      setError(
-        err.response?.data?.message
-          || err.message
-          || 'Registration failed — check your details.',
-      );
+      setError(humanizeRegisterError(err));
     } finally {
       setSubmitting(false);
     }
