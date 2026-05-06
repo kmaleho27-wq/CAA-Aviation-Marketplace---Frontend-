@@ -26,6 +26,15 @@ const CATEGORIES = [
 
 const CATEGORY_LABEL = Object.fromEntries(CATEGORIES.map((c) => [c.key, c.label]));
 
+// Pretty discipline labels for the AMO crew display. Matches the
+// labels used elsewhere (compliance dashboard, audit pack).
+const DISCIPLINE_LABEL = {
+  flight_crew: 'Pilot', national_pilot: 'NPL', glider_pilot: 'Glider',
+  balloon_pilot: 'Balloon', rpas_pilot: 'RPAS', flight_engineer: 'FE',
+  cabin_crew: 'Cabin', atc: 'ATC', ame: 'AME', aviation_medical: 'DAME',
+  non_licensed: 'Ground',
+};
+
 const STATUS_TONE = {
   verified: { bg: 'rgba(58, 138, 110, 0.15)', color: 'var(--color-sage-500)', border: 'rgba(58, 138, 110, 0.30)', label: '✓ Verified AMO' },
   pending:  { bg: 'rgba(212, 169, 52, 0.10)', color: 'var(--text-warning)',   border: 'rgba(212, 169, 52, 0.25)', label: 'Pending verification' },
@@ -61,6 +70,21 @@ function ServiceCard({ s, onQuote, busy }) {
       {(s.aircraftTypes?.length ?? 0) > 0 && (
         <div style={styles.tagsRow}>
           {s.aircraftTypes.map((t) => <span key={t} style={styles.tag}>{t}</span>)}
+        </div>
+      )}
+
+      {/* Verified crew disciplines on staff at this AMO. Operator
+          shopping for a B1-only job can see at a glance whether this
+          shop has B1 engineers. Empty means the shop has no verified
+          crew on Naluka yet — not "no engineers", just "not declared". */}
+      {(s.crewDisciplines?.length ?? 0) > 0 && (
+        <div style={styles.crewRow}>
+          <span style={styles.crewLabel}>Verified crew:</span>
+          {s.crewDisciplines.map(({ discipline, count }) => (
+            <span key={discipline} style={styles.crewChip}>
+              {count} {DISCIPLINE_LABEL[discipline] || discipline}
+            </span>
+          ))}
         </div>
       )}
 
@@ -194,4 +218,7 @@ const styles = {
   empty: { background: 'var(--surface-card)', border: '1px dashed var(--border-default)', borderRadius: 'var(--radius-lg)', padding: '40px 24px', textAlign: 'center' },
   emptyTitle: { fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 },
   emptySub: { fontSize: 12, color: 'var(--text-tertiary)' },
+  crewRow: { display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border-subtle)' },
+  crewLabel: { fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-overline)' },
+  crewChip: { background: 'rgba(58, 138, 110, 0.10)', color: 'var(--color-sage-500)', border: '1px solid rgba(58, 138, 110, 0.25)', borderRadius: 'var(--radius-pill)', padding: '2px 8px', fontSize: 10, fontWeight: 600 },
 };

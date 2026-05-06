@@ -98,13 +98,17 @@ export default function MroQuotesPanel({ refreshKey }) {
     try {
       const result = await acceptMroQuote(q.id);
       if (result.checkoutUrl) {
+        // Navigating away — busyId reset isn't needed but doesn't hurt.
         window.location.href = result.checkoutUrl;
       } else if (result.mode === 'scaffold') {
         toast.warning('PayFast not configured — would have charged ' + q.amountQuoted);
         await reload();
+      } else {
+        toast.warning('Unexpected response — try again or contact support.');
       }
     } catch (err) {
       toast.error(err.message || 'Could not accept');
+    } finally {
       setBusyId(null);
     }
   };
@@ -120,10 +124,10 @@ export default function MroQuotesPanel({ refreshKey }) {
         window.location.href = result.checkoutUrl;
       } else {
         toast.warning('Could not get a fresh checkout URL. Try cancelling and re-quoting.');
-        setBusyId(null);
       }
     } catch (err) {
       toast.error(err.message || 'Could not resume');
+    } finally {
       setBusyId(null);
     }
   };
@@ -131,12 +135,25 @@ export default function MroQuotesPanel({ refreshKey }) {
   const onMarkComplete = async (q) => {
     // Prompt the AMO to optionally attach an 8130/RTS doc. If they skip,
     // the work_complete state still works — doc upload is encouraged
-    // not required at MVP.
-    const wantsDoc = window.confirm(
+    // not required at MVP. We use Cancel = "back out entirely" (matches
+    // browser intuition) and OK = "proceed with doc upload now". The
+    // separate "Skip docs" branch is reached only if the operator
+    // explicitly clicks Cancel on the file dialog after choosing OK.
+    const choice = window.prompt(
       `Mark ${q.service?.name || 'this work'} complete?\n\n` +
-      `OK = upload an 8130 / RTS doc now (recommended)\n` +
-      `Cancel = mark complete without a doc (you can dispute-block-prone)`
+      `Type "doc" to upload an 8130 / RTS now (recommended) and continue.\n` +
+      `Type "skip" to mark complete without a doc — operator may push back ` +
+      `or open a dispute since they have no proof of work.\n` +
+      `Leave blank or close to back out.`,
+      'doc'
     );
+    if (!choice) return;
+    const normalized = choice.trim().toLowerCase();
+    const wantsDoc = normalized === 'doc';
+    if (normalized !== 'doc' && normalized !== 'skip') {
+      toast.warning('Type "doc" or "skip" — anything else cancels.');
+      return;
+    }
 
     let docPath = null;
     if (wantsDoc) {

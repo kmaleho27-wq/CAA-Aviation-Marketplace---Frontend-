@@ -26,7 +26,50 @@ export async function listMroServices(opts: MroFilter = {}) {
 
   const { data, error } = await q;
   if (error) throw error;
-  return snakeToCamel(data);
+  const services = snakeToCamel(data) as Array<Record<string, unknown> & { mroId: string }>;
+
+  // Enrich each service with the AMO's verified crew disciplines
+  // (primary + secondary). An operator hiring an AMO for a B1 task
+  // wants to see "this shop has 3 verified B1 engineers" — visibility
+  // is the V1 win, filtering is V2.
+  const mroIds = Array.from(new Set(services.map((s) => s.mroId).filter(Boolean)));
+  if (mroIds.length === 0) return services;
+
+  const [pplRes, credRes] = await Promise.all([
+    supabase.from('personnel')
+      .select('id, discipline, status, created_by_operator')
+      .in('created_by_operator', mroIds)
+      .eq('status', 'verified'),
+    supabase.from('personnel_credential')
+      .select('discipline, status, personnel_id, personnel:personnel_id(created_by_operator)')
+      .eq('status', 'verified'),
+  ]);
+
+  const disciplineCounts = new Map<string, Map<string, number>>();
+  const bump = (mroId: string, discipline: string) => {
+    if (!mroId || !discipline) return;
+    const inner = disciplineCounts.get(mroId) ?? new Map<string, number>();
+    inner.set(discipline, (inner.get(discipline) ?? 0) + 1);
+    disciplineCounts.set(mroId, inner);
+  };
+
+  (pplRes.data ?? []).forEach((p) => bump(p.created_by_operator, p.discipline));
+  (credRes.data ?? []).forEach((c) => {
+    // personnel join only present when the personnel itself was visible
+    // via RLS. RLS scopes personnel to operator/admin/counterparty only —
+    // we may legitimately get rows without the join populated; skip.
+    const pp = c.personnel as { created_by_operator?: string } | null;
+    if (!pp?.created_by_operator) return;
+    if (!mroIds.includes(pp.created_by_operator)) return;
+    bump(pp.created_by_operator, c.discipline);
+  });
+
+  return services.map((s) => ({
+    ...s,
+    crewDisciplines: Array.from(disciplineCounts.get(s.mroId)?.entries() ?? [])
+      .sort((a, b) => b[1] - a[1])  // most-staffed disciplines first
+      .map(([discipline, count]) => ({ discipline, count })),
+  }));
 }
 
 export async function createMroService(payload: {

@@ -220,6 +220,14 @@ export default function Dashboard() {
         <LoadingBlock label="Loading AOG events…" minHeight={120} />
       ) : aog.error ? (
         <ErrorBlock error={aog.error} onRetry={aog.refetch} />
+      ) : aog.data.length === 0 ? (
+        <div style={styles.aogEmpty}>
+          <span style={styles.aogEmptyIcon}>✈️</span>
+          <div>
+            <div style={styles.aogEmptyTitle}>No active AOG events</div>
+            <div style={styles.aogEmptySub}>Your fleet is in the air. Live AOG events appear here in real time.</div>
+          </div>
+        </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 28 }}>
           {aog.data.map((a) => (
@@ -238,6 +246,16 @@ export default function Dashboard() {
         <LoadingBlock label="Loading personnel…" minHeight={200} />
       ) : personnel.error ? (
         <ErrorBlock error={personnel.error} onRetry={personnel.refetch} />
+      ) : personnel.data.length === 0 ? (
+        <div style={styles.personnelEmpty}>
+          <div style={styles.personnelEmptyTitle}>No crew yet</div>
+          <div style={styles.personnelEmptySub}>
+            Add your first crew member to start tracking SACAA licence and medical status.
+          </div>
+          <button onClick={() => navigate('/app/personnel')} style={styles.personnelEmptyBtn}>
+            + Add crew member
+          </button>
+        </div>
       ) : (
         <div style={styles.tableWrap}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -509,5 +527,37 @@ const styles = {
     fontSize: 14,
     fontWeight: 700,
     flexShrink: 0,
+  },
+  aogEmpty: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 14,
+    background: 'var(--surface-card)',
+    border: '1px dashed var(--border-default)',
+    borderRadius: 'var(--radius-lg)',
+    padding: '14px 18px',
+    marginBottom: 28,
+  },
+  aogEmptyIcon: { fontSize: 22 },
+  aogEmptyTitle: { fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 2 },
+  aogEmptySub: { fontSize: 11, color: 'var(--text-tertiary)' },
+  personnelEmpty: {
+    background: 'var(--surface-card)',
+    border: '1px dashed var(--border-default)',
+    borderRadius: 'var(--radius-lg)',
+    padding: '32px 24px',
+    textAlign: 'center',
+  },
+  personnelEmptyTitle: { fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 },
+  personnelEmptySub: { fontSize: 12, color: 'var(--text-tertiary)', marginBottom: 16 },
+  personnelEmptyBtn: {
+    background: 'var(--action-primary)',
+    color: 'var(--action-primary-text)',
+    border: 'none',
+    borderRadius: 'var(--radius-md)',
+    padding: '8px 16px',
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: 'pointer',
   },
 };

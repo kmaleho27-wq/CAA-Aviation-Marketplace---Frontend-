@@ -17,6 +17,17 @@ import { LoadingBlock, ErrorBlock } from '../components/ApiState';
 // migration 0022, the global chain integrity proof stays admin-only;
 // operators get segment-level proofs of just their events.
 
+// Filter chip groups. Keys map to event_type prefixes so a single chip
+// can capture related events ('rts.*', 'funds.*', etc.) without
+// listing every variant.
+const EVENT_TYPE_FILTERS = [
+  { key: 'all',      label: 'All',      match: () => true },
+  { key: 'rts',      label: 'RTS',      match: (t) => t?.startsWith('rts.') },
+  { key: 'funds',    label: 'Funds',    match: (t) => t?.startsWith('funds.') },
+  { key: 'kyc',      label: 'KYC',      match: (t) => t?.startsWith('kyc.') },
+  { key: 'dispute',  label: 'Disputes', match: (t) => t?.startsWith('dispute.') },
+];
+
 const TYPE_LABEL = {
   'rts.signed':        { label: 'RTS signed',        color: 'var(--color-sage-500)' },
   'funds.released':    { label: 'Funds released',    color: 'var(--color-sage-500)' },
@@ -55,6 +66,10 @@ export default function AuditLog() {
   const [error, setError] = useState(null);
   const [proof, setProof] = useState(null);
   const [verifying, setVerifying] = useState(false);
+  // Filter state — chip filter for event type, free-text search across
+  // subject id + payload. Both apply client-side over the loaded set.
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [search, setSearch] = useState('');
   const toast = useToast();
 
   useEffect(() => {
@@ -107,6 +122,19 @@ request a global verify_chain() result from a Naluka admin.`;
   if (loading) return <div style={styles.page}><LoadingBlock label="Loading audit events…" /></div>;
   if (error) return <div style={styles.page}><ErrorBlock error={error} onRetry={() => window.location.reload()} /></div>;
 
+  // Compute filtered set — chip narrows by event type prefix, search
+  // matches against subject id (case-insensitive) or stringified payload.
+  const matcher = EVENT_TYPE_FILTERS.find((f) => f.key === typeFilter)?.match || (() => true);
+  const q = search.trim().toLowerCase();
+  const filteredEvents = events.filter((e) => {
+    if (!matcher(e.eventType)) return false;
+    if (!q) return true;
+    if (e.subjectId?.toLowerCase().includes(q)) return true;
+    if (JSON.stringify(e.payload || {}).toLowerCase().includes(q)) return true;
+    if (e.eventType?.toLowerCase().includes(q)) return true;
+    return false;
+  });
+
   return (
     <div style={styles.page}>
       <div style={styles.header}>
@@ -126,13 +154,47 @@ request a global verify_chain() result from a Naluka admin.`;
 
       <div style={styles.controls}>
         <div style={styles.controlsLeft}>
-          <span style={styles.eventCount}>{events.length}</span>
-          <span style={styles.eventLabel}>events visible to you</span>
+          <span style={styles.eventCount}>{filteredEvents.length}</span>
+          <span style={styles.eventLabel}>
+            {filteredEvents.length === events.length
+              ? 'events visible to you'
+              : `of ${events.length} events match`}
+          </span>
         </div>
         <button onClick={onVerify} disabled={verifying || events.length === 0} style={styles.btnPrimary}>
           {verifying ? 'Verifying…' : '🔐 Verify chain segment'}
         </button>
       </div>
+
+      {/* Filter chips + search — applied client-side over the loaded set.
+          getMyAuditEvents already caps at limit:500 server-side, so this
+          stays cheap. If we hit operators with 5000+ events we'll move
+          this server-side. */}
+      {events.length > 0 && (
+        <div style={styles.filterBar}>
+          <div style={styles.filterChips}>
+            {EVENT_TYPE_FILTERS.map((f) => {
+              const active = typeFilter === f.key;
+              return (
+                <button
+                  key={f.key}
+                  onClick={() => setTypeFilter(f.key)}
+                  style={{ ...styles.chip, ...(active ? styles.chipActive : {}) }}
+                >
+                  {f.label}
+                </button>
+              );
+            })}
+          </div>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search subject or payload…"
+            style={styles.searchInput}
+          />
+        </div>
+      )}
 
       {proof && (
         <div style={{ ...styles.proofCard, ...(proof.valid ? styles.proofOk : styles.proofFail) }}>
@@ -174,7 +236,7 @@ request a global verify_chain() result from a Naluka admin.`;
             </tr>
           </thead>
           <tbody>
-            {events.map((e) => {
+            {filteredEvents.map((e) => {
               const tone = TYPE_LABEL[e.eventType] || { label: e.eventType, color: 'var(--text-secondary)' };
               return (
                 <tr key={e.eventId} style={styles.tr}>
@@ -229,4 +291,9 @@ const styles = {
   emptyTitle: { fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 8 },
   emptyBody: { fontSize: 12, color: 'var(--text-tertiary)', maxWidth: 480, margin: '0 auto', lineHeight: 1.6 },
   footnote: { fontSize: 11, color: 'var(--text-tertiary)', lineHeight: 1.6, padding: '12px 4px 0', borderTop: '1px solid var(--border-subtle)' },
+  filterBar: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 14, flexWrap: 'wrap' },
+  filterChips: { display: 'flex', gap: 6, flexWrap: 'wrap' },
+  chip: { background: 'transparent', border: '1px solid var(--border-default)', color: 'var(--text-tertiary)', borderRadius: 'var(--radius-pill)', padding: '4px 12px', fontSize: 11, cursor: 'pointer' },
+  chipActive: { background: 'rgba(212, 169, 52, 0.12)', borderColor: 'rgba(212, 169, 52, 0.30)', color: 'var(--text-accent)' },
+  searchInput: { background: 'var(--surface-input)', color: 'var(--text-primary)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', padding: '6px 10px', fontSize: 12, height: 30, outline: 'none', minWidth: 200 },
 };

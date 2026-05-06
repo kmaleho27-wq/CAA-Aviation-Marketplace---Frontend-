@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../lib/toast';
 import { downloadMyDataExport, requestAccountDeletion } from '../api/popi';
+import { updatePassword } from '../api/auth';
 import { useNavigate } from 'react-router-dom';
+import PasswordInput from '../components/PasswordInput';
 
 const PREF_FIELDS = [
   { key: 'expiry_alerts',   label: 'Document expiry alerts',  hint: 'We notify you 90/30/7 days before any of your documents expire.' },
@@ -16,6 +18,11 @@ export default function Settings() {
   const [prefs, setPrefs] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  // Password change form state. Kept local — not persisted, no telemetry.
+  const [pwNew, setPwNew] = useState('');
+  const [pwConfirm, setPwConfirm] = useState('');
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pwError, setPwError] = useState('');
   const toast = useToast();
   const navigate = useNavigate();
 
@@ -59,6 +66,30 @@ export default function Settings() {
       setPrefs((p) => ({ ...p, [key]: !next[key] }));   // revert
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    setPwError('');
+    if (pwNew.length < 8) {
+      setPwError('New password must be at least 8 characters.');
+      return;
+    }
+    if (pwNew !== pwConfirm) {
+      setPwError('Passwords do not match.');
+      return;
+    }
+    setPwSaving(true);
+    try {
+      await updatePassword(pwNew);
+      toast.success('Password updated. You can sign in with your new password next time.');
+      setPwNew('');
+      setPwConfirm('');
+    } catch (err) {
+      setPwError(err.message || 'Could not update password.');
+    } finally {
+      setPwSaving(false);
     }
   };
 
@@ -136,6 +167,37 @@ export default function Settings() {
       </section>
 
       <section style={styles.section}>
+        <div style={styles.sectionLabel}>Change password</div>
+        <div style={styles.sectionLead}>
+          Pick a new password to use next time you sign in. Use the eye icon to verify what you typed.
+        </div>
+        <form onSubmit={handlePasswordChange} style={{ maxWidth: 360 }}>
+          <label style={styles.pwLabel}>New password</label>
+          <PasswordInput
+            placeholder="At least 8 characters"
+            value={pwNew}
+            onChange={(e) => setPwNew(e.target.value)}
+            autoComplete="new-password"
+          />
+          <label style={{ ...styles.pwLabel, marginTop: 12 }}>Confirm new password</label>
+          <PasswordInput
+            placeholder="Type it again"
+            value={pwConfirm}
+            onChange={(e) => setPwConfirm(e.target.value)}
+            autoComplete="new-password"
+          />
+          {pwError && <div style={styles.pwError}>{pwError}</div>}
+          <button
+            type="submit"
+            disabled={pwSaving || !pwNew || !pwConfirm}
+            style={{ ...styles.pwBtn, opacity: (pwSaving || !pwNew || !pwConfirm) ? 0.6 : 1 }}
+          >
+            {pwSaving ? 'Updating…' : 'Update password'}
+          </button>
+        </form>
+      </section>
+
+      <section style={styles.section}>
         <div style={styles.sectionLabel}>Privacy & data</div>
         <div style={styles.sectionLead}>POPI Act §23 (right to export) + §24 (right to deletion).</div>
         <div style={styles.privacyActions}>
@@ -183,4 +245,7 @@ const styles = {
   fineprint: { fontSize: 11, color: 'var(--text-tertiary)', lineHeight: 1.5, marginTop: 6 },
   empty: { fontSize: 12, color: 'var(--text-tertiary)', fontStyle: 'italic' },
   link: { color: 'var(--text-warning)', textDecoration: 'none' },
+  pwLabel: { display: 'block', fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6 },
+  pwError: { marginTop: 12, padding: '8px 10px', background: 'rgba(212, 86, 86, 0.08)', border: '1px solid rgba(212, 86, 86, 0.30)', borderLeft: '3px solid var(--text-danger)', borderRadius: 'var(--radius-md)', color: 'var(--text-danger)', fontSize: 12 },
+  pwBtn: { marginTop: 16, height: 38, padding: '0 18px', background: 'var(--action-primary)', color: 'var(--action-primary-text)', border: 'none', borderRadius: 'var(--radius-md)', fontSize: 13, fontWeight: 600, cursor: 'pointer' },
 };
