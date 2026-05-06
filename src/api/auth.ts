@@ -84,6 +84,33 @@ export async function me() {
   };
 }
 
+/** Send a password-reset email. The link in the email lands on
+ *  /reset-password where the user picks a new password. Supabase's
+ *  detectSessionInUrl picks up the recovery token automatically. */
+export async function requestPasswordReset(email: string) {
+  if (isMockApi) {
+    // Mock mode: pretend we sent it. UI flows the same way.
+    await new Promise((r) => setTimeout(r, 300));
+    return { ok: true };
+  }
+  const redirectTo = `${window.location.origin}/reset-password`;
+  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+  if (error) throw normalizeAuthError(error);
+  return { ok: true };
+}
+
+/** Set a new password. Caller must already be in a recovery session
+ *  (i.e. just landed on /reset-password from the email link). */
+export async function updatePassword(newPassword: string) {
+  if (isMockApi) {
+    await new Promise((r) => setTimeout(r, 300));
+    return { ok: true };
+  }
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) throw normalizeAuthError(error);
+  return { ok: true };
+}
+
 /** Normalize Supabase AuthError → axios-style err.response.data.message
  * so existing catch blocks keep working unchanged. */
 function normalizeAuthError(err: { message?: string }): Error & {

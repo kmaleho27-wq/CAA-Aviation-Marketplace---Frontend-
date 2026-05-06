@@ -10,6 +10,8 @@ import Pricing from './pages/marketing/Pricing';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import AuthCallback from './pages/AuthCallback';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 // Authenticated surfaces: lazy-loaded so unauthenticated visitors don't
 // download admin / mobile / operator JS just to view the landing page.
@@ -61,6 +63,8 @@ export default function App() {
 
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/status" element={<Status />} />
         <Route path="/terms" element={<Legal which="terms" />} />

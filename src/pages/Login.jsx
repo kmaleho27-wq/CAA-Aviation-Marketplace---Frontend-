@@ -3,6 +3,7 @@ import { useNavigate, useLocation, Link, Navigate } from 'react-router-dom';
 import { login as authLogin } from '../api/auth';
 import { landingPathForRole, isTokenValid, getUser } from '../lib/auth';
 import Logo from '../components/Logo';
+import PasswordInput from '../components/PasswordInput';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -66,14 +67,14 @@ export default function Login() {
             autoFocus
           />
 
-          <label style={styles.label}>Password</label>
-          <input
-            type="password"
-            placeholder="••••••••"
+          <div style={styles.passwordLabelRow}>
+            <label style={{ ...styles.label, marginTop: 0 }}>Password</label>
+            <Link to="/forgot-password" style={styles.forgotLink}>Forgot password?</Link>
+          </div>
+          <PasswordInput
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            style={styles.input}
-            required
+            autoComplete="current-password"
           />
 
           {error && <div style={styles.error}>{error}</div>}
@@ -187,5 +188,18 @@ const styles = {
   link: {
     color: 'var(--action-primary)',
     fontWeight: 600,
+  },
+  passwordLabelRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 14,
+    marginBottom: 6,
+  },
+  forgotLink: {
+    fontSize: 11,
+    color: 'var(--text-accent)',
+    textDecoration: 'none',
+    fontWeight: 500,
   },
 };

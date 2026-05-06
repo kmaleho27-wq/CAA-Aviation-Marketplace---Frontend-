@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { register as authRegister } from '../api/auth';
 import Logo from '../components/Logo';
+import PasswordInput from '../components/PasswordInput';
 
 // Hide the marketing/brand panel on narrow viewports. The form column
 // is `flex: 1 1 0`, so it expands to fill the page when this hides.
@@ -277,14 +278,11 @@ export default function Register() {
           />
 
           <label style={styles.label}>Password</label>
-          <input
-            type="password"
+          <PasswordInput
             placeholder="At least 8 characters"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            style={styles.input}
-            minLength={8}
-            required
+            autoComplete="new-password"
           />
 
           {/* Discipline-specific fields */}
