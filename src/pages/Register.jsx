@@ -104,6 +104,56 @@ function humanizeRegisterError(err) {
          'Registration failed — please check your details and try again.';
 }
 
+// Nationalities — ISO 3166-1 alpha-2. Ordered so the most likely
+// users (SADC + common African aviation hubs + common expat origins)
+// appear first. "Other" lets users type a country we missed.
+//
+// Why this matters at signup: SACAA verifies SA nationals against the
+// SACAA register directly. Foreign nationals require ICAO state-of-
+// licence validation against their home authority (CAA UK, FAA, EASA,
+// etc.) which is a different admin workflow and SLA. The reviewer
+// needs to know upfront.
+const NATIONALITIES = [
+  { code: 'ZA', label: 'South African' },
+  // SADC
+  { code: 'ZW', label: 'Zimbabwean' },
+  { code: 'BW', label: 'Botswanan' },
+  { code: 'NA', label: 'Namibian' },
+  { code: 'MZ', label: 'Mozambican' },
+  { code: 'LS', label: 'Lesotho' },
+  { code: 'SZ', label: 'Eswatini' },
+  { code: 'AO', label: 'Angolan' },
+  { code: 'ZM', label: 'Zambian' },
+  { code: 'MW', label: 'Malawian' },
+  { code: 'MG', label: 'Malagasy' },
+  { code: 'MU', label: 'Mauritian' },
+  // African aviation hubs
+  { code: 'KE', label: 'Kenyan' },
+  { code: 'NG', label: 'Nigerian' },
+  { code: 'GH', label: 'Ghanaian' },
+  { code: 'EG', label: 'Egyptian' },
+  { code: 'MA', label: 'Moroccan' },
+  { code: 'TZ', label: 'Tanzanian' },
+  { code: 'UG', label: 'Ugandan' },
+  { code: 'RW', label: 'Rwandan' },
+  { code: 'ET', label: 'Ethiopian' },
+  { code: 'SN', label: 'Senegalese' },
+  // Common expat origins for African aviation
+  { code: 'GB', label: 'British' },
+  { code: 'US', label: 'American' },
+  { code: 'AU', label: 'Australian' },
+  { code: 'CA', label: 'Canadian' },
+  { code: 'NZ', label: 'New Zealander' },
+  { code: 'IE', label: 'Irish' },
+  { code: 'DE', label: 'German' },
+  { code: 'FR', label: 'French' },
+  { code: 'NL', label: 'Dutch' },
+  { code: 'IN', label: 'Indian' },
+  { code: 'PK', label: 'Pakistani' },
+  { code: 'PH', label: 'Filipino' },
+  { code: 'OTHER', label: 'Other (specify below)' },
+];
+
 // Free-form ground ops roles — surfaces a dropdown for non_licensed
 // instead of asking the user to invent a string.
 const NON_LICENSED_ROLES = [
@@ -128,6 +178,11 @@ export default function Register() {
   const [licenceSubtype, setLicenceSubtype] = useState('');
   const [location, setLocation] = useState('');
   const [nonLicensedRole, setNonLicensedRole] = useState('aviation_firefighter');
+  // Nationality — captured for ALL roles (operators, suppliers, AMOs, pros)
+  // because admin verification path differs by nationality. Default ZA
+  // since most users are SA-based.
+  const [nationality, setNationality] = useState('ZA');
+  const [nationalityOther, setNationalityOther] = useState('');
 
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -151,6 +206,17 @@ export default function Register() {
       // Build the metadata payload — the handle_new_user trigger reads
       // these keys to populate the profile + personnel rows.
       const metadata = { name, role: account.role };
+
+      // Nationality applies to all account types. ISO alpha-2 for known
+      // countries; for "OTHER" we send the user's free-text answer in
+      // a separate key so admin reviewers can read it without colliding
+      // with the strict ISO column.
+      if (nationality === 'OTHER') {
+        metadata.nationality = 'XX';                  // ISO 3166 user-assigned code
+        metadata.nationality_other = nationalityOther.trim();
+      } else {
+        metadata.nationality = nationality;
+      }
 
       if (account.showDiscipline) {
         Object.assign(metadata, {
@@ -308,6 +374,36 @@ export default function Register() {
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="new-password"
           />
+
+          {/* Nationality — needed for ALL roles. SACAA verification
+              uses one path for SA nationals, a different path (ICAO
+              state-of-licence validation) for foreign nationals. The
+              admin reviewer uses this to pick the right workflow. */}
+          <label style={styles.label}>Nationality</label>
+          <select
+            value={nationality}
+            onChange={(e) => setNationality(e.target.value)}
+            style={styles.input}
+            required
+          >
+            {NATIONALITIES.map((n) => (
+              <option key={n.code} value={n.code}>{n.label}</option>
+            ))}
+          </select>
+          {nationality === 'OTHER' && (
+            <>
+              <label style={{ ...styles.label, marginTop: 8 }}>Specify nationality</label>
+              <input
+                type="text"
+                placeholder="e.g. Burkinabé, Ghanaian, Bahraini…"
+                value={nationalityOther}
+                onChange={(e) => setNationalityOther(e.target.value)}
+                style={styles.input}
+                maxLength={40}
+                required
+              />
+            </>
+          )}
 
           {/* Discipline-specific fields */}
           {account.showDiscipline && (

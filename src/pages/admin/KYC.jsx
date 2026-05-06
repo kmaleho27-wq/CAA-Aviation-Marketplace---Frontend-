@@ -40,6 +40,19 @@ function prettyNonLicensed(v) {
   return (v || '').split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 }
 
+// ISO 3166-1 alpha-2 → display label. Keep tight; "XX" is our marker
+// for "Other (specified by user)" — actual text lives in user_metadata.
+const NATIONALITY_LABEL = {
+  ZA: '🇿🇦 SA', ZW: '🇿🇼 ZW', BW: '🇧🇼 BW', NA: '🇳🇦 NA', MZ: '🇲🇿 MZ',
+  LS: '🇱🇸 LS', SZ: '🇸🇿 SZ', AO: '🇦🇴 AO', ZM: '🇿🇲 ZM', MW: '🇲🇼 MW',
+  MG: '🇲🇬 MG', MU: '🇲🇺 MU', KE: '🇰🇪 KE', NG: '🇳🇬 NG', GH: '🇬🇭 GH',
+  EG: '🇪🇬 EG', MA: '🇲🇦 MA', TZ: '🇹🇿 TZ', UG: '🇺🇬 UG', RW: '🇷🇼 RW',
+  ET: '🇪🇹 ET', SN: '🇸🇳 SN',
+  GB: '🇬🇧 UK', US: '🇺🇸 US', AU: '🇦🇺 AU', CA: '🇨🇦 CA', NZ: '🇳🇿 NZ',
+  IE: '🇮🇪 IE', DE: '🇩🇪 DE', FR: '🇫🇷 FR', NL: '🇳🇱 NL', IN: '🇮🇳 IN',
+  PK: '🇵🇰 PK', PH: '🇵🇭 PH', XX: '🌍 Other',
+};
+
 function PendingPersonnelCard({ p, onApprove, onReject, busy }) {
   const info = DISCIPLINE_INFO[p.discipline] || { label: p.discipline, part: p.sacaaPart };
   const [uploadedDocs, setUploadedDocs] = useState([]);
@@ -116,12 +129,31 @@ function PendingPersonnelCard({ p, onApprove, onReject, busy }) {
               <>Ground Ops · {prettyNonLicensed(p.nonLicensedRole)}</>
             )}
             {p.location && <> · 📍 {p.location}</>}
+            {p.nationality && (
+              <> · <span style={{
+                ...styles.nationalityChip,
+                ...(p.nationality !== 'ZA' ? styles.nationalityForeign : {}),
+              }}>
+                {NATIONALITY_LABEL[p.nationality] || p.nationality}
+                {p.nationality !== 'ZA' && p.nationality !== 'XX' && (
+                  <span style={styles.foreignTag}> · ICAO path</span>
+                )}
+              </span></>
+            )}
           </div>
 
           {/* Discipline-specific verification checklist */}
           <div style={styles.checklist}>
-            <div style={styles.checklistTitle}>To verify with SACAA:</div>
+            <div style={styles.checklistTitle}>
+              To verify {p.nationality && p.nationality !== 'ZA' ? 'via ICAO state-of-licence:' : 'with SACAA:'}
+            </div>
             <ul style={styles.checklistList}>
+              {p.nationality && p.nationality !== 'ZA' && p.nationality !== 'XX' && (
+                <li style={{ color: 'var(--text-warning)' }}>
+                  <strong>Foreign national ({NATIONALITY_LABEL[p.nationality] || p.nationality})</strong> —
+                  validate licence with home authority before accepting SACAA conversion or recognition certificate.
+                </li>
+              )}
               {info.part != null && (
                 <li>
                   Part {info.part} licence {p.license ? <code>{p.license}</code> : '(missing — request from applicant)'}
@@ -625,5 +657,30 @@ const styles = {
     borderRadius: 'var(--radius-sm)',
     fontSize: 12, fontWeight: 700,
     cursor: 'pointer',
+  },
+  nationalityChip: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 4,
+    padding: '1px 7px',
+    fontSize: 11,
+    fontWeight: 500,
+    background: 'rgba(58, 138, 110, 0.08)',
+    color: 'var(--text-secondary)',
+    border: '1px solid rgba(58, 138, 110, 0.20)',
+    borderRadius: 'var(--radius-pill)',
+  },
+  nationalityForeign: {
+    background: 'rgba(212, 169, 52, 0.10)',
+    border: '1px solid rgba(212, 169, 52, 0.25)',
+    color: 'var(--text-warning)',
+    fontWeight: 600,
+  },
+  foreignTag: {
+    fontSize: 9,
+    fontWeight: 700,
+    letterSpacing: '0.04em',
+    textTransform: 'uppercase',
+    opacity: 0.85,
   },
 };
