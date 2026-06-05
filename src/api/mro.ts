@@ -80,14 +80,13 @@ export async function createMroService(payload: {
   location: string;
   leadTimeDays?: number | null;
   priceFrom?: string | null;
-  /** Platform markup % — dynamic 20-200 per migration 0029. Caller
-   *  passes the slider value from ListMroServiceModal. Defaults to
-   *  50 (the schema default) if omitted. */
-  markupPct?: number | null;
 }) {
   const { data: u } = await supabase.auth.getUser();
   if (!u?.user) throw new Error('Not signed in.');
 
+  // markup_pct intentionally omitted — broker controls markup via
+  // /app/inventory, not the supplier listing form. Schema default
+  // of 50 applies until the broker adjusts.
   const { data, error } = await supabase
     .from('mro_service')
     .insert({
@@ -99,7 +98,6 @@ export async function createMroService(payload: {
       location: payload.location,
       lead_time_days: payload.leadTimeDays ?? null,
       price_from: payload.priceFrom || null,
-      markup_pct: payload.markupPct ?? 50,
       status: 'pending',                    // admin verifies AMO before listing goes live
       active: true,
     })
