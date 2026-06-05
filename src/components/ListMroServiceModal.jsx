@@ -19,6 +19,26 @@ const CATEGORIES = [
   { key: 'other',            label: 'Other' },
 ];
 
+// Parse a currency-prefixed string like "ZAR 280,000" → 280000 number.
+// Returns null if there's no clear numeric content. Tolerant of spaces,
+// commas, currency codes, and decimal points.
+function parsePrice(s) {
+  if (!s) return null;
+  const digits = String(s).replace(/[^0-9.]/g, '');
+  if (!digits) return null;
+  const n = parseFloat(digits);
+  return Number.isFinite(n) ? n : null;
+}
+
+// Format a number back to a display string using the original currency
+// prefix the user typed, or fall back to plain commas.
+function formatMarkedUp(supplierPrice, markupPct, currencyPrefix = 'ZAR') {
+  const n = parsePrice(supplierPrice);
+  if (n == null) return null;
+  const marked = Math.round(n * (1 + markupPct / 100));
+  return `${currencyPrefix} ${marked.toLocaleString('en-US')}`;
+}
+
 export default function ListMroServiceModal({ onClose, onSubmit }) {
   const [name, setName] = useState('');
   const [category, setCategory] = useState('a_check');
@@ -27,7 +47,14 @@ export default function ListMroServiceModal({ onClose, onSubmit }) {
   const [location, setLocation] = useState('');
   const [leadTimeDays, setLeadTimeDays] = useState('');
   const [priceFrom, setPriceFrom] = useState('');
+  // markup_pct lives on mro_service per migration 0029. Default 50 is the
+  // Aeropreserve baseline; slider clamps to 20-200% per the platform agreement.
+  const [markupPct, setMarkupPct] = useState(50);
   const [submitting, setSubmitting] = useState(false);
+
+  // Live preview: what the buyer will see vs what the supplier nets.
+  // Empty until the user types a base price they recognise as numeric.
+  const previewBuyer = formatMarkedUp(priceFrom, markupPct);
 
   const handle = async (e) => {
     e.preventDefault();
@@ -45,6 +72,7 @@ export default function ListMroServiceModal({ onClose, onSubmit }) {
         location: location.trim(),
         leadTimeDays: leadTimeDays ? Number(leadTimeDays) : null,
         priceFrom: priceFrom.trim() || null,
+        markupPct,
       });
     } finally {
       setSubmitting(false);
@@ -127,6 +155,44 @@ export default function ListMroServiceModal({ onClose, onSubmit }) {
             </div>
           </div>
 
+          {/* Markup slider — the supplier sets their net price above,
+              and chooses how much the platform marks it up. Buyer sees
+              the marked-up price; supplier always keeps their net. */}
+          <div style={styles.markupBlock}>
+            <div style={styles.markupHead}>
+              <label style={{ ...styles.label, margin: 0 }}>Platform markup</label>
+              <span style={styles.markupValue}>{markupPct}%</span>
+            </div>
+            <input
+              type="range"
+              min={20}
+              max={200}
+              step={1}
+              value={markupPct}
+              onChange={(e) => setMarkupPct(Number(e.target.value))}
+              style={styles.slider}
+            />
+            <div style={styles.markupScale}>
+              <span>20%</span>
+              <span>50%</span>
+              <span>100%</span>
+              <span>150%</span>
+              <span>200%</span>
+            </div>
+            {previewBuyer && (
+              <div style={styles.previewBox}>
+                <div style={styles.previewRow}>
+                  <span style={styles.previewLabel}>You receive</span>
+                  <span style={styles.previewNet}>{priceFrom}</span>
+                </div>
+                <div style={styles.previewRow}>
+                  <span style={styles.previewLabel}>Buyer sees</span>
+                  <span style={styles.previewBuyer}>{previewBuyer}</span>
+                </div>
+              </div>
+            )}
+          </div>
+
           <div style={styles.notice}>
             Your listing starts in <strong>pending verification</strong>. Once an admin
             confirms your AMO Part 145 status, the listing appears in the public
@@ -166,4 +232,14 @@ const styles = {
   actions: { display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 18 },
   cancel: { background: 'transparent', border: '1px solid var(--border-default)', color: 'var(--text-tertiary)', borderRadius: 'var(--radius-md)', padding: '8px 14px', fontSize: 13, cursor: 'pointer' },
   submit: { background: 'var(--action-primary)', color: 'var(--action-primary-text)', border: 'none', borderRadius: 'var(--radius-md)', padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer' },
+  markupBlock: { marginTop: 18, padding: '12px 14px', background: 'var(--surface-input)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' },
+  markupHead: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  markupValue: { fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700, color: 'var(--text-warning)' },
+  slider: { width: '100%', accentColor: 'var(--action-primary)' },
+  markupScale: { display: 'flex', justifyContent: 'space-between', fontSize: 9, color: 'var(--text-overline)', marginTop: 4, fontFamily: 'var(--font-mono)' },
+  previewBox: { marginTop: 12, padding: '10px 12px', background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' },
+  previewRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, lineHeight: 1.8 },
+  previewLabel: { color: 'var(--text-tertiary)' },
+  previewNet: { fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)', fontWeight: 500 },
+  previewBuyer: { fontFamily: 'var(--font-mono)', color: 'var(--color-sage-500)', fontWeight: 700 },
 };

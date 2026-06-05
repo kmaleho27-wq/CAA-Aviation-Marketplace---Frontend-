@@ -22,6 +22,21 @@ const CONDITION_COLOR = {
   Serviceable:  'var(--text-secondary)',
 };
 
+// Apply the platform markup_pct to the supplier's net price string.
+// Same algorithm as the MRO marketplace (see src/pages/Mro.jsx).
+// Default 50% when markup_pct is missing — matches the schema default
+// from migration 0029.
+function applyMarkup(priceStr, markupPct) {
+  if (!priceStr) return priceStr;
+  const match = String(priceStr).match(/^([A-Za-z]+)?\s*([\d,.]+)/);
+  if (!match) return priceStr;
+  const prefix = (match[1] || 'ZAR').toUpperCase();
+  const num = parseFloat(match[2].replace(/,/g, ''));
+  if (!Number.isFinite(num)) return priceStr;
+  const marked = Math.round(num * (1 + (markupPct || 50) / 100));
+  return `${prefix} ${marked.toLocaleString('en-US')}`;
+}
+
 function PartCard({ part, onBuy }) {
   const tone = STATUS_TONES[part.status] || STATUS_TONES.verified;
 
@@ -45,7 +60,7 @@ function PartCard({ part, onBuy }) {
         </div>
         <div style={styles.supplier}>{part.supplier} · {part.location}</div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
-          <div style={styles.price}>{part.price}</div>
+          <div style={styles.price}>{applyMarkup(part.price, part.markupPct ?? 50)}</div>
           <button onClick={() => onBuy(part)} style={part.aog ? styles.btnAog : styles.btnBuy}>
             {part.aog ? 'AOG Procure' : 'Request Quote'}
           </button>

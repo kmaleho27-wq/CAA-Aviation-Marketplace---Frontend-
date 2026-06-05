@@ -26,6 +26,22 @@ const CATEGORIES = [
 
 const CATEGORY_LABEL = Object.fromEntries(CATEGORIES.map((c) => [c.key, c.label]));
 
+// Apply the supplier's platform markup to a price string the supplier
+// entered as net (e.g. "ZAR 280,000"). Preserves any currency prefix
+// the supplier typed; falls back to ZAR. The supplier's own listing
+// surface still shows their net — only buyers see the marked-up
+// number on the marketplace card, since that's the deal price.
+function applyMarkup(priceStr, markupPct) {
+  if (!priceStr) return priceStr;
+  const match = String(priceStr).match(/^([A-Za-z]+)?\s*([\d,.]+)/);
+  if (!match) return priceStr;
+  const prefix = (match[1] || 'ZAR').toUpperCase();
+  const num = parseFloat(match[2].replace(/,/g, ''));
+  if (!Number.isFinite(num)) return priceStr;
+  const marked = Math.round(num * (1 + (markupPct || 50) / 100));
+  return `${prefix} ${marked.toLocaleString('en-US')}`;
+}
+
 // Pretty discipline labels for the AMO crew display. Matches the
 // labels used elsewhere (compliance dashboard, audit pack).
 const DISCIPLINE_LABEL = {
@@ -63,7 +79,12 @@ function ServiceCard({ s, onQuote, busy }) {
           <div><div style={styles.metaLabel}>Lead time</div><div style={styles.metaValue}>{s.leadTimeDays} {s.leadTimeDays === 1 ? 'day' : 'days'}</div></div>
         )}
         {s.priceFrom && (
-          <div><div style={styles.metaLabel}>From</div><div style={{ ...styles.metaValue, color: 'var(--text-warning)' }}>{s.priceFrom}</div></div>
+          <div>
+            <div style={styles.metaLabel}>From</div>
+            <div style={{ ...styles.metaValue, color: 'var(--text-warning)' }}>
+              {applyMarkup(s.priceFrom, s.markupPct ?? 50)}
+            </div>
+          </div>
         )}
       </div>
 
