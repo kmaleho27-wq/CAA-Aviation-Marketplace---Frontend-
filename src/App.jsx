@@ -75,7 +75,7 @@ export default function App() {
           path="/app"
           element={
             <RequireAuth>
-              <RoleGate allow={['OPERATOR', 'SUPPLIER', 'AMO']}>
+              <RoleGate allow={['OPERATOR', 'SUPPLIER', 'AMO', 'ADMIN']}>
                 <AppShell />
               </RoleGate>
             </RequireAuth>
