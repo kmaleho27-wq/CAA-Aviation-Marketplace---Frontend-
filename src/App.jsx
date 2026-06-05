@@ -27,6 +27,8 @@ const AuditLog        = lazy(() => import('./pages/AuditLog'));
 const Compliance      = lazy(() => import('./pages/Compliance'));
 const Referrals       = lazy(() => import('./pages/Referrals'));
 const BrokerInventory = lazy(() => import('./pages/BrokerInventory'));
+const MyRequests      = lazy(() => import('./pages/MyRequests'));
+const Matchmaking     = lazy(() => import('./pages/Matchmaking'));
 const Support         = lazy(() => import('./pages/Support'));
 const Status          = lazy(() => import('./pages/Status'));
 const Legal           = lazy(() => import('./pages/Legal'));
@@ -90,6 +92,8 @@ export default function App() {
           <Route path="compliance" element={<Compliance />} />
           <Route path="referrals" element={<Referrals />} />
           <Route path="inventory" element={<BrokerInventory />} />
+          <Route path="my-requests" element={<MyRequests />} />
+          <Route path="matchmaking" element={<Matchmaking />} />
           <Route path="audit-pack" element={<AuditPack />} />
           <Route path="audit-log" element={<AuditLog />} />
           <Route path="support" element={<Support />} />

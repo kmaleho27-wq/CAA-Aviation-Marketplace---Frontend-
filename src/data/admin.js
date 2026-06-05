@@ -53,4 +53,5 @@ export const ADMIN_NAV = [
   // admin nav avoids the "where is it?" hunt.
   { id: 'referrals',    path: '/app/referrals',      label: 'Referrals',   icon: 'users' },
   { id: 'inventory',    path: '/app/inventory',      label: 'Inventory',   icon: 'card' },
+  { id: 'matchmaking',  path: '/app/matchmaking',    label: 'Matchmaking', icon: 'alert' },
 ];
