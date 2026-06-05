@@ -48,4 +48,8 @@ export const ADMIN_NAV = [
   { id: 'transactions', path: '/admin/transactions', label: 'Transactions', icon: 'card' },
   { id: 'disputes',     path: '/admin/disputes',     label: 'Disputes',    icon: 'alert',  badge: 2 },
   { id: 'analytics',    path: '/admin/analytics',    label: 'Analytics',   icon: 'chart' },
+  // Cross-shell link: Referrals lives in /app/ but admins are also brokers
+  // for Aeropreserve and similar accounts. Keeping the discovery from
+  // admin nav avoids the "where is it?" hunt.
+  { id: 'referrals',    path: '/app/referrals',      label: 'Referrals',   icon: 'users' },
 ];
