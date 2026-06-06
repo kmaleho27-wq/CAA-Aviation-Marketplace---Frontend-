@@ -29,6 +29,7 @@ const Referrals       = lazy(() => import('./pages/Referrals'));
 const BrokerInventory = lazy(() => import('./pages/BrokerInventory'));
 const MyRequests      = lazy(() => import('./pages/MyRequests'));
 const Matchmaking     = lazy(() => import('./pages/Matchmaking'));
+const SupplierOrders  = lazy(() => import('./pages/SupplierOrders'));
 const Support         = lazy(() => import('./pages/Support'));
 const Status          = lazy(() => import('./pages/Status'));
 const Legal           = lazy(() => import('./pages/Legal'));
@@ -94,6 +95,7 @@ export default function App() {
           <Route path="inventory" element={<BrokerInventory />} />
           <Route path="my-requests" element={<MyRequests />} />
           <Route path="matchmaking" element={<Matchmaking />} />
+          <Route path="orders" element={<SupplierOrders />} />
           <Route path="audit-pack" element={<AuditPack />} />
           <Route path="audit-log" element={<AuditLog />} />
           <Route path="support" element={<Support />} />

@@ -93,6 +93,7 @@ export const NAV_ITEMS = [
   { id: 'inventory',    path: '/app/inventory',    label: 'Inventory',         icon: 'package',                                                       roles: ['ADMIN'] },
   { id: 'my-requests',  path: '/app/my-requests',  label: 'My Requests',       icon: 'package',                                                       roles: ['OPERATOR', 'AMO', 'ADMIN'] },
   { id: 'matchmaking',  path: '/app/matchmaking',  label: 'Matchmaking',       icon: 'package',                                                       roles: ['ADMIN'] },
+  { id: 'orders',       path: '/app/orders',       label: 'Broker Orders',     icon: 'package',                                                       roles: ['SUPPLIER', 'AMO', 'ADMIN'] },
 ];
 
 /** Filter NAV_ITEMS to those allowed for the given platform role. */
